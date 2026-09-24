@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- 不声明图标的话浏览器会自动请求 /favicon.ico → 404(E2E 实测到的唯一报错) -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>zost</title>
+    <!--
+      主题预置必须是**外链**脚本:CSP 是 script-src 'self',内联会被拦(FOUC 闪烁)。
+      值走白名单校验,见 public/theme-init.js。
+    -->
+    <script src="/theme-init.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

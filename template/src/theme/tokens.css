@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+/* 类名驱动的暗色(不是媒体查询):主题由 theme-init.js / localStorage 决定。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 清掉 Tailwind 默认调色板 —— 不清空,「换肤只改这一个文件」就是假承诺:
+ * 默认的 blue-500 之类仍可被业务写出,主题 token 管不住它们。
+ */
+@theme {
+  --color-*: initial;
+}
+
+/*
+ * 6 个语义 token(B8)。**唯一的调色板入口**:
+ * 项目要改颜色,只改这两个块,不动任何组件。
+ */
+:root {
+  --ui-bg: #ffffff;
+  --ui-fg: #111827;
+  --ui-muted: #6b7280;
+  --ui-border: #e5e7eb;
+  --ui-primary: #2563eb;
+  --ui-danger: #dc2626;
+}
+
+.dark {
+  --ui-bg: #0a0a0a;
+  --ui-fg: #f5f5f5;
+  --ui-muted: #9ca3af;
+  --ui-border: #27272a;
+  --ui-primary: #60a5fa;
+  --ui-danger: #f87171;
+}
+
+/*
+ * 映射进 Tailwind 命名空间:`bg-bg` `text-fg` `border-border` …
+ * `inline` 是关键 —— 工具类里**内联** var() 而不是拷贝值,
+ * `.dark` 重定义 --ui-* 才会即时生效(不加则暗色要整包重建才变)。
+ */
+@theme inline {
+  --color-bg: var(--ui-bg);
+  --color-fg: var(--ui-fg);
+  --color-muted: var(--ui-muted);
+  --color-border: var(--ui-border);
+  --color-primary: var(--ui-primary);
+  --color-danger: var(--ui-danger);
+}

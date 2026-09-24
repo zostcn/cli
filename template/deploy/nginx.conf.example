@@ -1,0 +1,55 @@
+# 模板项目的 nginx 参考配置(B10:安全响应头由 nginx 发,不用 meta 标签)。
+#
+# ⚠️ 子路径部署:各前端统一挂在 zost.cn/<项目名>/ 下(§2.6)——
+#    ① vite 的 `base` 与 router 的 `createWebHistory` 必须同为 /<项目名>/(脚手架参数化);
+#    ② 下面 location 的 /<项目名>/ 与 root/alias 一致;
+#    ③ SPA 回退:所有未命中路径 index.html(否则刷新 404)。
+#
+# 另一条铁律(F6):应用端口**只 bind 127.0.0.1**(vite.config / 后端 server.address
+# 都已如此),否则 nginx 的 CSP / limit_req 全部可被绕过。
+
+server {
+    listen 443 ssl http2;
+    server_name www.zost.cn;
+
+    # ssl_certificate     /etc/nginx/tls/fullchain.pem;
+    # ssl_certificate_key /etc/nginx/tls/privkey.pem;
+
+    # 构建产物(dist)所在目录
+    root /srv/zost/<项目名>/dist;
+
+    # ---- 安全响应头(B10)----
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.zost.cn;" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # ---- 静态资源(带 hash 的可长缓存;index.html 不缓存)----
+    location /<项目名>/assets/ {
+        alias /srv/zost/<项目名>/dist/assets/;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # ---- SPA 回退 ----
+    location /<项目名>/ {
+        alias /srv/zost/<项目名>/dist/;
+        try_files $uri $uri/ /<项目名>/index.html;
+    }
+
+    # ---- API 走同域反代(CSRF cookie 是 SameSite=lax,同站才带)----
+    # limit_req 是第一层限流(F1):$binary_remote_addr 取 TCP 对端,伪造不了。
+    # 应用里的 RateLimitFilter 是第二层,按业务路径细粒度 —— 两层都要。
+    # limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
+    location /api/ {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host              $host;
+        proxy_set_header X-Real-IP         $remote_addr;   # **覆盖**不是追加 ——
+        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # 后端 ClientIp 只读 X-Real-IP(F2):v1 取 XFF 第一个值可被客户端伪造
+        # limit_req zone=api burst=40 nodelay;
+    }
+}
