@@ -6,6 +6,7 @@
  * OpenAPI spec version: 2.0.0
  */
 
+export * from './deviceVO';
 export * from './issuedTokenVO';
 export * from './issueRequest';
 export * from './loginRequest';

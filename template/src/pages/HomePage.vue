@@ -20,6 +20,13 @@ async function onLogout() {
     <p class="text-sm text-muted">
       roles: {{ store.roles.join(', ') || '—' }}
     </p>
+    <!-- 布局是空壳(B6:菜单从路由树派生) —— 模板先用裸链接给出设备页入口 -->
+    <RouterLink
+      to="/devices"
+      class="text-sm underline text-muted"
+    >
+      信任设备管理
+    </RouterLink>
     <button
       class="self-start border border-border rounded px-3 py-2"
       @click="onLogout"

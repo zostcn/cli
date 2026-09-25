@@ -1,4 +1,5 @@
 import DefaultLayout from '@/layouts/DefaultLayout.vue';
+import DevicesPage from '@/pages/DevicesPage.vue';
 import HomePage from '@/pages/HomePage.vue';
 import LoginPage from '@/pages/LoginPage.vue';
 import NotFoundPage from '@/pages/NotFoundPage.vue';
@@ -37,6 +38,11 @@ export const guardedRoutes: RouteRecordRaw[] = [
     name: 'root',
     component: DefaultLayout,
     meta: { requiresAuth: true },
-    children: [{ path: '', name: 'home', component: HomePage }],
+    children: [
+      { path: '', name: 'home', component: HomePage },
+      // 信任设备管理(§1.12)。**不写 meta.roles = 登录即可** ——
+      // 与后端「未入册路径登录即可」的授权语义一致。
+      { path: 'devices', name: 'devices', component: DevicesPage },
+    ],
   },
 ];

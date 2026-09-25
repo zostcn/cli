@@ -30,6 +30,7 @@ import type {
 } from 'vue';
 
 import type {
+  DeviceVO,
   IssueRequest,
   IssuedTokenVO,
   LoginRequest,
@@ -532,3 +533,126 @@ export function useGetAuthMe<TData = Awaited<ReturnType<typeof getAuthMe>>, TErr
 
 
 
+export const getAuthDevice = (
+
+ signal?: AbortSignal
+) => {
+
+
+      return customInstance<DeviceVO[]>(
+      {url: `/api/auth/device`, method: 'GET', signal
+    },
+      );
+    }
+
+
+
+
+export const getGetAuthDeviceQueryKey = () => {
+    return [
+    'api','auth','device'
+    ] as const;
+    }
+
+
+export const getGetAuthDeviceQueryOptions = <TData = Awaited<ReturnType<typeof getAuthDevice>>, TError = unknown>( options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthDevice>>, TError, TData>>, }
+) => {
+
+const {query: queryOptions} = options ?? {};
+
+  const queryKey =  getGetAuthDeviceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuthDevice>>> = ({ signal }) => getAuthDevice(signal);
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuthDevice>>, TError, TData>
+}
+
+export type GetAuthDeviceQueryResult = NonNullable<Awaited<ReturnType<typeof getAuthDevice>>>
+export type GetAuthDeviceQueryError = unknown
+
+
+
+export function useGetAuthDevice<TData = Awaited<ReturnType<typeof getAuthDevice>>, TError = unknown>(
+  options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getAuthDevice>>, TError, TData>>, }
+ , queryClient?: QueryClient
+ ): UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetAuthDeviceQueryOptions(options)
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryReturnType<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = unref(queryOptions).queryKey as DataTag<QueryKey, TData, TError>;
+
+  return query;
+}
+
+
+
+
+
+
+export const deleteAuthDeviceId = (
+    id: MaybeRefOrGetter<string>,
+ signal?: AbortSignal
+) => {
+      id = toValue(id);
+
+      return customInstance<void>(
+      {url: `/api/auth/device/${id}`, method: 'DELETE', signal
+    },
+      );
+    }
+
+
+
+
+export const getDeleteAuthDeviceIdMutationKey = () => ['deleteAuthDeviceId'] as const;
+
+export const getDeleteAuthDeviceIdMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthDeviceId>>, TError,DeleteAuthDeviceIdMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAuthDeviceId>>, TError,DeleteAuthDeviceIdMutationVariables, TContext> => {
+
+const mutationKey = getDeleteAuthDeviceIdMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAuthDeviceId>>, DeleteAuthDeviceIdMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAuthDeviceId(id,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAuthDeviceIdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAuthDeviceId>>>
+
+    export type DeleteAuthDeviceIdMutationError = unknown
+    export type DeleteAuthDeviceIdMutationVariables = {id: string}
+
+    export const useDeleteAuthDeviceId = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAuthDeviceId>>, TError,DeleteAuthDeviceIdMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof deleteAuthDeviceId>>,
+        TError,
+        DeleteAuthDeviceIdMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDeleteAuthDeviceIdMutationOptions(options), queryClient);
+    }

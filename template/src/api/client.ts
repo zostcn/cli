@@ -42,7 +42,7 @@ function readHeader(headers: unknown, name: string): string | undefined {
   return undefined;
 }
 
-/** 只看 status(B4)。ProblemDetail 的 properties.code 仅作元数据带上。 */
+/** 只看 status(B4)。ProblemDetail 的 code 仅作元数据带上。 */
 function toApiError(error: unknown): ApiError {
   if (!axios.isAxiosError(error)) {
     return new ApiError(0, 'unknown', error instanceof Error ? error.message : String(error));
@@ -50,7 +50,9 @@ function toApiError(error: unknown): ApiError {
   const err = error as AxiosError<ProblemDetailLike>;
   const status = err.response?.status ?? 0;
   const data = err.response?.data;
-  const code = data?.properties?.code;
+  // code 拍平在顶层(Spring 对 RFC 9457 properties 的序列化,实测),且**只认字符串** ——
+  // v1 遗留的数字 code:500 不是 ProblemDetail 的东西,别带进元数据(踩过 properties 嵌套取空)。
+  const code = typeof data?.code === 'string' ? data.code : undefined;
   const message = data?.detail ?? err.message;
 
   let kind: ApiError['kind'];
