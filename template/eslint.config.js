@@ -14,6 +14,9 @@ export default tseslint.config(
     files: ['**/*.vue'],
     languageOptions: {
       parserOptions: { parser: tseslint.parser },
+      // .vue 的 script 也跑在浏览器里(window/setInterval)。.ts 侧 no-undef 被
+      // typescript-eslint 的 eslint-recommended 关掉了,.vue 没有这层豁免 —— 不设就会误报。
+      globals: { ...globals.browser },
     },
   },
   {

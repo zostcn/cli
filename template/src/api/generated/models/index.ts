@@ -12,4 +12,6 @@ export * from './loginRequest';
 export * from './meResponse';
 export * from './meUserVO';
 export * from './revokeRequest';
+export * from './smsLoginRequest';
+export * from './smsSendRequest';
 export * from './tokenVO';

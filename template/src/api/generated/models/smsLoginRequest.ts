@@ -6,9 +6,9 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface LoginRequest {
+export interface SmsLoginRequest {
   /** @minLength 1 */
   phone: string;
   /** @minLength 1 */
-  password: string;
+  code: string;
 }

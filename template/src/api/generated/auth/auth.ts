@@ -35,6 +35,8 @@ import type {
   LoginRequest,
   MeResponse,
   RevokeRequest,
+  SmsLoginRequest,
+  SmsSendRequest,
   TokenVO
 } from '../models';
 
@@ -223,6 +225,128 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getPostAuthTokenIssueMutationOptions(options), queryClient);
+    }
+    export const postAuthSmsSend = (
+    smsSendRequest: MaybeRefOrGetter<SmsSendRequest>,
+ signal?: AbortSignal
+) => {
+      smsSendRequest = toValue(smsSendRequest);
+
+      return customInstance<void>(
+      {url: `/api/auth/sms/send`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: smsSendRequest, signal
+    },
+      );
+    }
+
+
+
+
+export const getPostAuthSmsSendMutationKey = () => ['postAuthSmsSend'] as const;
+
+export const getPostAuthSmsSendMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsSend>>, TError,PostAuthSmsSendMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsSend>>, TError,PostAuthSmsSendMutationVariables, TContext> => {
+
+const mutationKey = getPostAuthSmsSendMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAuthSmsSend>>, PostAuthSmsSendMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAuthSmsSend(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAuthSmsSendMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthSmsSend>>>
+    export type PostAuthSmsSendMutationBody = SmsSendRequest
+    export type PostAuthSmsSendMutationError = unknown
+    export type PostAuthSmsSendMutationVariables = {data: SmsSendRequest}
+
+    export const usePostAuthSmsSend = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsSend>>, TError,PostAuthSmsSendMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof postAuthSmsSend>>,
+        TError,
+        PostAuthSmsSendMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostAuthSmsSendMutationOptions(options), queryClient);
+    }
+    export const postAuthSmsLogin = (
+    smsLoginRequest: MaybeRefOrGetter<SmsLoginRequest>,
+ signal?: AbortSignal
+) => {
+      smsLoginRequest = toValue(smsLoginRequest);
+
+      return customInstance<MeResponse>(
+      {url: `/api/auth/sms/login`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: smsLoginRequest, signal
+    },
+      );
+    }
+
+
+
+
+export const getPostAuthSmsLoginMutationKey = () => ['postAuthSmsLogin'] as const;
+
+export const getPostAuthSmsLoginMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsLogin>>, TError,PostAuthSmsLoginMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsLogin>>, TError,PostAuthSmsLoginMutationVariables, TContext> => {
+
+const mutationKey = getPostAuthSmsLoginMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAuthSmsLogin>>, PostAuthSmsLoginMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAuthSmsLogin(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAuthSmsLoginMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthSmsLogin>>>
+    export type PostAuthSmsLoginMutationBody = SmsLoginRequest
+    export type PostAuthSmsLoginMutationError = unknown
+    export type PostAuthSmsLoginMutationVariables = {data: SmsLoginRequest}
+
+    export const usePostAuthSmsLogin = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthSmsLogin>>, TError,PostAuthSmsLoginMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof postAuthSmsLogin>>,
+        TError,
+        PostAuthSmsLoginMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostAuthSmsLoginMutationOptions(options), queryClient);
     }
     export const postAuthLogout = (
 

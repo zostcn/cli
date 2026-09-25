@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { fetchUser, login, logout as logoutAdapter } from '@/api/auth';
+import { fetchUser, login, logout as logoutAdapter, smsLogin } from '@/api/auth';
 import { emitAuthCleared, onAuthCleared } from '@/api/memory';
 import { ApiError } from '@/api/types';
 import type { MeUserVO } from '@/api/generated/models';
@@ -48,6 +48,12 @@ export const useSystemStore = defineStore('system', {
       const me = await login(phone, password);
       this.user = me.user ?? null;
       this.routesReady = false; // 角色可能变了,下次进守卫重建动态路由
+    },
+    /** 短信验证码登录 —— 会话落点与密码登录完全同种(后端 establishSession 共用)。 */
+    async loginWithSms(phone: string, code: string) {
+      const me = await smsLogin(phone, code);
+      this.user = me.user ?? null;
+      this.routesReady = false;
     },
     async logout() {
       try {
