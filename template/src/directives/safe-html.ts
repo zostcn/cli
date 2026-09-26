@@ -1,5 +1,5 @@
-import DOMPurify from 'dompurify';
-import type { Directive } from 'vue';
+import DOMPurify from "dompurify";
+import type { Directive } from "vue";
 
 /**
  * `v-safe-html` —— 唯一允许写 innerHTML 的通道(B11)。
@@ -15,11 +15,11 @@ import type { Directive } from 'vue';
  * 留下可搜索的痕迹。
  */
 function apply(el: HTMLElement, value: unknown): void {
-  const html = typeof value === 'string' ? value : '';
+  const html = typeof value === "string" ? value : "";
   el.innerHTML = DOMPurify.sanitize(html, {
     USE_PROFILES: { html: true },
-    FORBID_TAGS: ['style', 'form', 'input', 'iframe', 'math'],
-    FORBID_ATTR: ['style'],
+    FORBID_TAGS: ["style", "form", "input", "iframe", "math"],
+    FORBID_ATTR: ["style"],
   });
 }
 

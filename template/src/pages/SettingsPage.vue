@@ -103,14 +103,9 @@
 
 <template>
   <section class="w-80 flex flex-col gap-4 p-4">
-    <h1 class="text-lg font-semibold">
-      账号安全
-    </h1>
+    <h1 class="text-lg font-semibold">账号安全</h1>
 
-    <form
-      class="flex flex-col gap-3"
-      @submit.prevent="onSubmit"
-    >
+    <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
       <div class="flex items-center gap-3 text-sm">
         <span class="text-muted">验证方式</span>
         <button
@@ -137,7 +132,7 @@
         class="border border-border rounded px-3 py-2 bg-bg text-fg"
         placeholder="当前密码"
         autocomplete="current-password"
-      >
+      />
 
       <!-- ── 不记得,短信验证 ─────────────────── -->
       <template v-else>
@@ -150,7 +145,7 @@
             class="border border-border rounded px-3 py-2 bg-bg text-fg flex-1"
             placeholder="验证码"
             autocomplete="one-time-code"
-          >
+          />
           <button
             type="button"
             class="border border-border rounded px-3 py-2 text-sm disabled:opacity-50"
@@ -169,7 +164,7 @@
         placeholder="新密码（至少 8 位）"
         autocomplete="new-password"
         required
-      >
+      />
       <input
         v-model="confirmPassword"
         type="password"
@@ -177,26 +172,17 @@
         placeholder="确认新密码"
         autocomplete="new-password"
         required
-      >
+      />
       <p class="text-xs text-muted">
         修改成功后，其他设备上的登录会立即退出，本设备保持登录
       </p>
-      <button
-        type="submit"
-        class="bg-primary text-white rounded px-3 py-2"
-      >
+      <button type="submit" class="bg-primary text-white rounded px-3 py-2">
         保存
       </button>
-      <p
-        v-if="error"
-        class="text-sm text-danger"
-      >
+      <p v-if="error" class="text-sm text-danger">
         {{ error }}
       </p>
-      <p
-        v-if="success"
-        class="text-sm text-primary"
-      >
+      <p v-if="success" class="text-sm text-primary">
         {{ success }}
       </p>
     </form>

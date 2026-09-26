@@ -1,4 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router';
+import type { RouteRecordRaw } from "vue-router";
 
 /**
  * 按角色过滤路由树(纯函数,不改输入)。
@@ -27,7 +27,11 @@ export function filterRoutesByRoles(
     }
     const filtered: RouteRecordRaw = { ...route };
     if (route.children) {
-      filtered.children = filterRoutesByRoles(route.children, userRoles, effective);
+      filtered.children = filterRoutesByRoles(
+        route.children,
+        userRoles,
+        effective,
+      );
     }
     result.push(filtered);
   }

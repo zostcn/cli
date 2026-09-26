@@ -8,10 +8,10 @@
  * 只认 'dark' / 'light',其余一律回落默认。
  */
 (function () {
-  var ALLOWED = ['dark', 'light'];
-  var value = 'light';
+  var ALLOWED = ["dark", "light"];
+  var value = "light";
   try {
-    var stored = localStorage.getItem('theme');
+    var stored = localStorage.getItem("theme");
     if (stored && ALLOWED.indexOf(stored) !== -1) {
       value = stored;
     }

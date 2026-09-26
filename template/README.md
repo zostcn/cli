@@ -17,14 +17,17 @@ npm run dev          # http://localhost:5173,/api 代理到 127.0.0.1:8080
 
 种子账号见下方 SQL:`13900000000` / `admin123`。
 
-### 种子管理员(后端没有注册接口)
+### 种子管理员
+
+注册页(`POST /api/auth/register`)已开放,注册拿到的是 **user 角色**;
+要 **admin** 才走这个 SQL(或注册后手动改 rel 行):
 
 ```sql
 -- 密码哈希是 bcrypt("admin123"),生成方式:
 --   python -c "import bcrypt;print(bcrypt.hashpw(b'admin123',bcrypt.gensalt()).decode())"
--- ⚠️ 手机号**别用 13800000000** —— 那是后端测试(AuthFlowSupport)的固定测试号,
---    每次 ./mvnw test 的 @AfterEach 都会把这个号的用户删掉(实测踩过:种子神秘消失,
---    登录日志 Total: 0)。
+-- ⚠️ 手机号**别用 13800000000** —— 那是后端测试(AuthFlowSupport)的固定测试号。
+--    `./mvnw test` 打的是独立库 zost_api_test,动不到这里;但**从 IDE 跑测试**
+--    不走 surefire 会回落 .env 的 dev 库,把种子删掉(实测踩过:种子神秘消失)。
 INSERT INTO `user` (phone, password, nickname, role_key, status_key, created_at, updated_at)
 VALUES ('13900000000', '$2b$10$……替换为上面生成的哈希……', 'admin', 'admin', 'active', NOW(), NOW());
 
@@ -36,15 +39,16 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
 
 ## 命令
 
-| 命令 | 干什么 |
-|---|---|
-| `npm run dev` | 开发服务器(dev 无 `VITE_API_BASE_URL` 时自动走代理) |
-| `npm run build` | `vue-tsc` 类型检查 + 产物构建 |
-| `npm test` | Vitest —— 守卫顺序 / 路由过滤 / 错误归一化 / 主题白名单 |
-| `npm run lint` | ESLint(含 `vue/no-v-html`) |
-| `npm run gen` | orval 重新生成 `src/api/generated/`(**需要本地后端 8080 在跑**) |
+| 命令             | 干什么                                                          |
+| ---------------- | --------------------------------------------------------------- |
+| `npm run dev`    | 开发服务器(dev 无 `VITE_API_BASE_URL` 时自动走代理)             |
+| `npm run build`  | `vue-tsc` 类型检查 + 产物构建                                   |
+| `npm test`       | Vitest —— 守卫顺序 / 路由过滤 / 错误归一化 / 主题白名单         |
+| `npm run lint`   | ESLint(含 `vue/no-v-html`,**只管质量不带格式** —— 见规矩 4)     |
+| `npm run format` | Prettier 全仓格式化(默认配置;IDE 保存时插件跑的就是同一套)      |
+| `npm run gen`    | orval 重新生成 `src/api/generated/`(**需要本地后端 8080 在跑**) |
 
-## 三条不许破的规矩
+## 四条不许破的规矩
 
 1. **`src/api/generated/` 提交进仓库、不许手改**(§2.7)。
    后端改契约 → `npm run gen` → diff 直接可见;要改行为改 `src/api/client.ts` 或后端规范。
@@ -52,6 +56,9 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
    `GET /api/auth/me` 是会话与 token 的唯一权威来源。
 3. **错误分流只看 HTTP status,绝不看 body 里的 `code`**(B4)—— v1 的 401 曾把
    code 写成 500,判它会把「没登录」误读成「服务器炸了」。
+4. **格式归 Prettier、质量归 ESLint,不许互相越界** —— `eslint.config.js` 最后一项
+   `eslint-config-prettier` 关掉了全部格式类规则;谁再往 ESLint 加格式规则,
+   或绕开 `npm run format` 手调风格,就会重现「格式化一次、lint 打回来」的拉锯。
 
 ## 换认证通道(§2.5)
 
@@ -62,17 +69,17 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
 
 ## 关键文件地图
 
-| 要改什么 | 改哪 |
-|---|---|
-| 横切逻辑(CSRF / 401 / 403 分流 / 超时) | `src/api/client.ts`(**唯一出口**) |
-| 认证适配器 | `src/api/auth.ts`(唯一需要换的文件) |
-| 路由与菜单 | `src/router/routes.ts`(`meta.roles` 写一处,菜单从路由树派生) |
-| 顶栏 / 导航 / 退出 | `src/layouts/DefaultLayout.vue`(子路由写 `meta.title` 才进导航,roles 复用 `filter.ts`;换长相整个换掉它,派生逻辑照抄) |
-| 权限过滤逻辑 | `src/router/filter.ts`(纯函数,有测试锁着) |
-| 颜色 / 主题 | `src/theme/tokens.css`(6 个语义 token,清空了默认调色板) |
-| 守卫四步 | `src/router/guard.ts`(顺序即正确性,注释写明调错会怎样) |
-| 部署 / CSP | `deploy/nginx.conf.example` |
-| 接口生成范围 | `orval.config.ts` 的 `filters.tags`(模块 tag = 按需生成粒度) |
+| 要改什么                               | 改哪                                                                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 横切逻辑(CSRF / 401 / 403 分流 / 超时) | `src/api/client.ts`(**唯一出口**)                                                                                    |
+| 认证适配器                             | `src/api/auth.ts`(唯一需要换的文件)                                                                                  |
+| 路由与菜单                             | `src/router/routes.ts`(`meta.roles` 写一处,菜单从路由树派生)                                                         |
+| 顶栏 / 导航 / 退出                     | `src/layouts/DefaultLayout.vue`(子路由写 `meta.title` 才进导航,roles 复用 `filter.ts`;换长相整个换掉它,派生逻辑照抄) |
+| 权限过滤逻辑                           | `src/router/filter.ts`(纯函数,有测试锁着)                                                                            |
+| 颜色 / 主题                            | `src/theme/tokens.css`(6 个语义 token,清空了默认调色板)                                                              |
+| 守卫四步                               | `src/router/guard.ts`(顺序即正确性,注释写明调错会怎样)                                                               |
+| 部署 / CSP                             | `deploy/nginx.conf.example`                                                                                          |
+| 接口生成范围                           | `orval.config.ts` 的 `filters.tags`(模块 tag = 按需生成粒度)                                                         |
 
 ## 已知的坑(都实测过,别重踩)
 

@@ -7,13 +7,13 @@
  * ② client.ts(401 时发事件)与 stores/system.ts(收事件清态)**互相不认识** ——
  *    靠这里解环,store 永远不被 client import。
  */
-let csrfToken = '';
+let csrfToken = "";
 
 type Listener = () => void;
 const authClearedListeners = new Set<Listener>();
 
 export function setCsrf(token: string): void {
-  csrfToken = token ?? '';
+  csrfToken = token ?? "";
 }
 
 export function getCsrf(): string {
@@ -21,12 +21,12 @@ export function getCsrf(): string {
 }
 
 export function clearCsrf(): void {
-  csrfToken = '';
+  csrfToken = "";
 }
 
 /** 401 / 登出后调用:清 token 并通知订阅者(store 复位)。 */
 export function emitAuthCleared(): void {
-  csrfToken = '';
+  csrfToken = "";
   for (const listener of authClearedListeners) {
     listener();
   }

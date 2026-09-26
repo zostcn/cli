@@ -1,0 +1,6 @@
+# orval 生成物按生成器自己的风格走 —— prettier 碰它只会让 `npm run gen` 后
+# 每次都出一大坨格式 diff,盖掉真正的契约变更。
+src/api/generated/
+dist/
+node_modules/
+package-lock.json

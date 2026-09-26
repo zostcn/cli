@@ -1,8 +1,8 @@
-import { useSystemStore } from '@/stores/system';
-import { filterRoutesByRoles } from './filter';
-import { guardedRoutes } from './routes';
-import type { Router } from 'vue-router';
-import type { NavigationGuardNext, RouteLocationNormalized } from 'vue-router';
+import { useSystemStore } from "@/stores/system";
+import { filterRoutesByRoles } from "./filter";
+import { guardedRoutes } from "./routes";
+import type { Router } from "vue-router";
+import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
 
 /**
  * 守卫四步,**顺序即正确性**(§2.4 第一行,调错就复现那条故障):
@@ -29,10 +29,14 @@ export function createAuthGuard(router: Router) {
       await store.bootstrap();
     } catch {
       // 后端不可达:跳登录并标记原因(§2.4)。已经在 /login 且带了标记 → 停住,别重定向循环。
-      if (to.path === '/login' && to.query.reason === 'unavailable') {
+      if (to.path === "/login" && to.query.reason === "unavailable") {
         next();
       } else {
-        next({ path: '/login', query: { ...to.query, reason: 'unavailable' }, replace: true });
+        next({
+          path: "/login",
+          query: { ...to.query, reason: "unavailable" },
+          replace: true,
+        });
       }
       return;
     }
@@ -45,7 +49,7 @@ export function createAuthGuard(router: Router) {
 
     // ③ 未登录
     if (!store.isAuthenticated) {
-      next({ path: '/login', query: { ...to.query }, replace: true });
+      next({ path: "/login", query: { ...to.query }, replace: true });
       return;
     }
 

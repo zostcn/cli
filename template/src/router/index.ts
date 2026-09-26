@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import { publicRoutes } from './routes';
+import { createRouter, createWebHistory } from "vue-router";
+import { publicRoutes } from "./routes";
 
 /**
  * 初始只挂公开路由;守卫树由 `guard.ts` 第 ④ 步按角色注入。

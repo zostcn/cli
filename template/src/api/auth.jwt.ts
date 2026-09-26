@@ -1,5 +1,5 @@
-import { http } from './client';
-import type { MeResponse } from './generated/models';
+import { http } from "./client";
+import type { MeResponse } from "./generated/models";
 
 /**
  * JWT 过渡态适配器(§2.5)—— **休眠中,不被引用**。
@@ -17,19 +17,19 @@ interface LegacyCurrentUser {
 }
 
 export async function fetchUserJwt(): Promise<MeResponse> {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem("access_token");
   const { data } = await http.post<LegacyCurrentUser>(
-    '/api/user/current',
+    "/api/user/current",
     {},
-    { headers: { Authorization: `Bearer ${token ?? ''}` } },
+    { headers: { Authorization: `Bearer ${token ?? ""}` } },
   );
   return {
     user: {
       id: String(data.id),
-      nickname: data.username ?? '',
-      roles: ['user'],
+      nickname: data.username ?? "",
+      roles: ["user"],
       permissions: [],
     },
-    csrfToken: '', // 令牌通道免 CSRF(BearerRequestMatcher 豁免),字段留空
+    csrfToken: "", // 令牌通道免 CSRF(BearerRequestMatcher 豁免),字段留空
   };
 }

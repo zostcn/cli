@@ -1,4 +1,4 @@
-import { setCsrf } from './memory';
+import { setCsrf } from "./memory";
 import {
   getAuthMe,
   postAuthLogin,
@@ -7,8 +7,8 @@ import {
   postAuthRegister,
   postAuthSmsLogin,
   postAuthSmsSend,
-} from './generated';
-import type { MeResponse } from './generated/models';
+} from "./generated";
+import type { MeResponse } from "./generated/models";
 
 /**
  * 认证适配器 —— **模板里唯一需要换的文件**(§2.5)。
@@ -25,13 +25,16 @@ import type { MeResponse } from './generated/models';
  */
 export async function fetchUser(): Promise<MeResponse> {
   const me = await getAuthMe();
-  setCsrf(me.csrfToken ?? '');
+  setCsrf(me.csrfToken ?? "");
   return me;
 }
 
-export async function login(phone: string, password: string): Promise<MeResponse> {
+export async function login(
+  phone: string,
+  password: string,
+): Promise<MeResponse> {
   const me = await postAuthLogin({ phone, password });
-  setCsrf(me.csrfToken ?? '');
+  setCsrf(me.csrfToken ?? "");
   return me;
 }
 
@@ -42,21 +45,31 @@ export async function login(phone: string, password: string): Promise<MeResponse
  * @param purpose 缺省 `login`(只给已注册号码发);`register` 一律发(含已注册 ——
  *                已注册用户拿码提交后才能看到「该手机号已注册」的引导)。
  */
-export async function sendSmsCode(phone: string, purpose?: 'login' | 'register'): Promise<void> {
+export async function sendSmsCode(
+  phone: string,
+  purpose?: "login" | "register",
+): Promise<void> {
   await postAuthSmsSend({ phone, purpose });
 }
 
 /** 短信验证码登录。验码通过后与密码登录拿到的是同一种会话。 */
-export async function smsLogin(phone: string, code: string): Promise<MeResponse> {
+export async function smsLogin(
+  phone: string,
+  code: string,
+): Promise<MeResponse> {
   const me = await postAuthSmsLogin({ phone, code });
-  setCsrf(me.csrfToken ?? '');
+  setCsrf(me.csrfToken ?? "");
   return me;
 }
 
 /** 注册(短信验证码换账号)。**即注册即登录** —— 响应与登录同形,处理同款。 */
-export async function register(phone: string, code: string, password: string): Promise<MeResponse> {
+export async function register(
+  phone: string,
+  code: string,
+  password: string,
+): Promise<MeResponse> {
   const me = await postAuthRegister({ phone, code, password });
-  setCsrf(me.csrfToken ?? '');
+  setCsrf(me.csrfToken ?? "");
   return me;
 }
 

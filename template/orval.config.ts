@@ -1,4 +1,4 @@
-import { defineConfig } from 'orval';
+import { defineConfig } from "orval";
 
 /**
  * 生成规则(§2.7):
@@ -13,21 +13,21 @@ import { defineConfig } from 'orval';
 export default defineConfig({
   template: {
     input: {
-      target: 'http://127.0.0.1:8080/v3/api-docs',
-      filters: { tags: ['auth'] },
+      target: "http://127.0.0.1:8080/v3/api-docs",
+      filters: { tags: ["auth"] },
     },
     output: {
-      target: './src/api/generated',
-      schemas: './src/api/generated/models',
-      mode: 'tags-split',
-      client: 'vue-query',
+      target: "./src/api/generated",
+      schemas: "./src/api/generated/models",
+      mode: "tags-split",
+      client: "vue-query",
       // ⚠️ 和 client 是**两个独立选项**:client 选 query 库,httpClient 选 HTTP 底座。
       // 默认 'fetch' 会生成 (url, {body, headers}) 风格 + {data,status,headers} 信封类型,
       // 与我们「config 对象 + 返回裸体」的 mutator 对不上(类型直接红)。实测键名。
-      httpClient: 'axios',
+      httpClient: "axios",
       clean: true,
       override: {
-        mutator: { path: './src/api/client.ts', name: 'customInstance' },
+        mutator: { path: "./src/api/client.ts", name: "customInstance" },
       },
     },
   },

@@ -1,8 +1,8 @@
-import vue from '@vitejs/plugin-vue';
-import tailwindcss from '@tailwindcss/vite';
-import { fileURLToPath } from 'node:url';
-import { loadEnv, type Plugin } from 'vite';
-import { defineConfig } from 'vitest/config';
+import vue from "@vitejs/plugin-vue";
+import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath } from "node:url";
+import { loadEnv, type Plugin } from "vite";
+import { defineConfig } from "vitest/config";
 
 /**
  * B12 环境变量纪律,两条:
@@ -18,13 +18,17 @@ function secretScanEnv(env: Record<string, string>, mode: string): Plugin {
   const forbidden = /(SECRET|KEY|PASSWORD|TOKEN)/i;
   const hits = Object.keys(env).filter((k) => forbidden.test(k));
   if (hits.length > 0) {
-    throw new Error(`[B12] VITE_* 环境变量禁止携带密钥语义,命中: ${hits.join(', ')}`);
+    throw new Error(
+      `[B12] VITE_* 环境变量禁止携带密钥语义,命中: ${hits.join(", ")}`,
+    );
   }
-  if (mode === 'production' && !env.VITE_API_BASE_URL) {
-    throw new Error('[B12] 生产构建必须显式设置 VITE_API_BASE_URL(见 .env.example)');
+  if (mode === "production" && !env.VITE_API_BASE_URL) {
+    throw new Error(
+      "[B12] 生产构建必须显式设置 VITE_API_BASE_URL(见 .env.example)",
+    );
   }
   return {
-    name: 'zost-secret-scan',
+    name: "zost-secret-scan",
     config(_config, { mode: m }) {
       // 仅执行校验,不改配置
       void m;
@@ -34,27 +38,27 @@ function secretScanEnv(env: Record<string, string>, mode: string): Plugin {
 }
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
+  const env = loadEnv(mode, process.cwd(), "VITE_");
   const useProxy = !env.VITE_API_BASE_URL;
 
   return {
-    base: '/',
+    base: "/",
     plugins: [secretScanEnv(env, mode), vue(), tailwindcss()],
     server: useProxy
       ? {
           proxy: {
             // changeOrigin: false —— 保持 Host,后端按 127.0.0.1:8080 就够
-            '/api': { target: 'http://127.0.0.1:8080', changeOrigin: false },
+            "/api": { target: "http://127.0.0.1:8080", changeOrigin: false },
           },
         }
       : undefined,
     resolve: {
       // fileURLToPath 而不是 URL.pathname:Windows 下 pathname 是 `/D:/…`,解析会坏
-      alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+      alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
     },
     test: {
-      environment: 'jsdom',
-      include: ['src/**/*.spec.ts'],
+      environment: "jsdom",
+      include: ["src/**/*.spec.ts"],
     },
   };
 });

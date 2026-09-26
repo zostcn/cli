@@ -1,5 +1,5 @@
-import { QueryClient } from '@tanstack/vue-query';
-import { ApiError } from './types';
+import { QueryClient } from "@tanstack/vue-query";
+import { ApiError } from "./types";
 
 /**
  * vue-query 的**模板级默认值** —— 生成的项目开箱继承,不用每个项目重配一遍。
@@ -18,7 +18,8 @@ export function createQueryClient(): QueryClient {
         staleTime: 30_000,
         retry: (failureCount, error) => {
           const kind = error instanceof ApiError ? error.kind : undefined;
-          const retriable = kind === undefined || kind === 'unavailable' || kind === 'unknown';
+          const retriable =
+            kind === undefined || kind === "unavailable" || kind === "unknown";
           return retriable && failureCount < 3;
         },
       },

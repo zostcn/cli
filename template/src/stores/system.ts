@@ -1,8 +1,14 @@
-import { defineStore } from 'pinia';
-import { fetchUser, login, logout as logoutAdapter, register as registerAdapter, smsLogin } from '@/api/auth';
-import { emitAuthCleared, onAuthCleared } from '@/api/memory';
-import { ApiError } from '@/api/types';
-import type { MeUserVO } from '@/api/generated/models';
+import { defineStore } from "pinia";
+import {
+  fetchUser,
+  login,
+  logout as logoutAdapter,
+  register as registerAdapter,
+  smsLogin,
+} from "@/api/auth";
+import { emitAuthCleared, onAuthCleared } from "@/api/memory";
+import { ApiError } from "@/api/types";
+import type { MeUserVO } from "@/api/generated/models";
 
 /**
  * bootstrap 节流窗口(毫秒)。守卫第一步**每次导航都会调** bootstrap ——
@@ -17,7 +23,7 @@ export const BOOTSTRAP_TTL_MS = 60_000;
  * 而 persist 一旦开着,以后加字段默认全被写进 storage(omit 黑名单的老问题)。
  * CSRF token 同理只在 memory.ts,不进 store(避免 devtools 里直接可见)。
  */
-export const useSystemStore = defineStore('system', {
+export const useSystemStore = defineStore("system", {
   state: () => ({
     user: null as MeUserVO | null,
     bootstrapped: false,
@@ -45,7 +51,10 @@ export const useSystemStore = defineStore('system', {
      * 且**不盖时间** —— 后端恢复后的下一次导航必须真重试。
      */
     async bootstrap() {
-      if (this.bootstrappedAt && Date.now() - this.bootstrappedAt < BOOTSTRAP_TTL_MS) {
+      if (
+        this.bootstrappedAt &&
+        Date.now() - this.bootstrappedAt < BOOTSTRAP_TTL_MS
+      ) {
         return;
       }
       try {
@@ -53,7 +62,7 @@ export const useSystemStore = defineStore('system', {
         this.user = me.user ?? null;
         this.bootstrappedAt = Date.now();
       } catch (e) {
-        if (e instanceof ApiError && e.kind === 'unauthorized') {
+        if (e instanceof ApiError && e.kind === "unauthorized") {
           this.user = null;
           this.bootstrappedAt = Date.now();
         } else {
