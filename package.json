@@ -1,0 +1,25 @@
+{
+  "name": "zost-cli",
+  "version": "0.1.0",
+  "description": "zost.cn 前端项目脚手架 —— 从 template/ 生成新项目",
+  "type": "module",
+  "bin": {
+    "zost-cli": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "template"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "npm run build && node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.2",
+    "typescript": "6.0.3"
+  }
+}
