@@ -81,10 +81,12 @@ assert.notEqual(bad.status, 0, "非法项目名应当拒绝");
 const { DOTFILE_FALLBACK } = await import(
   pathToFileURL(path.join(root, "dist", "scaffold.js")).href
 );
+// 按 EOL 归一再比:autocrlf 的机器上新克隆,template/ 里是 CRLF 而常量是 LF
+const norm = (s) => s.replace(/\r\n/g, "\n");
 for (const [name, content] of Object.entries(DOTFILE_FALLBACK)) {
   assert.equal(
-    await readFile(path.join(root, "template", name), "utf8"),
-    content,
+    norm(await readFile(path.join(root, "template", name), "utf8")),
+    norm(content),
     `${name} 的兜底常量与 template/ 里的文件必须逐字相同 —— 改一处另一处也要改`,
   );
   assert.ok(existsSync(path.join(dir, name)), `生成结果缺 ${name}`);
