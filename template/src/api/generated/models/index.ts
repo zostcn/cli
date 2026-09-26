@@ -6,12 +6,14 @@
  * OpenAPI spec version: 2.0.0
  */
 
+export * from './changePasswordRequest';
 export * from './deviceVO';
 export * from './issuedTokenVO';
 export * from './issueRequest';
 export * from './loginRequest';
 export * from './meResponse';
 export * from './meUserVO';
+export * from './registerRequest';
 export * from './revokeRequest';
 export * from './smsLoginRequest';
 export * from './smsSendRequest';

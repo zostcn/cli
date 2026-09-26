@@ -1,6 +1,6 @@
 import { ApiError } from '@/api/types';
 import * as authAdapter from '@/api/auth';
-import { useSystemStore } from '@/stores/system';
+import { BOOTSTRAP_TTL_MS, useSystemStore } from '@/stores/system';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createMemoryHistory, createRouter, type Router } from 'vue-router';
@@ -52,6 +52,8 @@ describe('守卫四步(§2.4 顺序即正确性)', () => {
     expect(router.currentRoute.value.name).toBe('home');
 
     fetchUser.mockResolvedValue(anonymous); // 会话过期
+    // bootstrap 有 60s 节流(见 system.ts) —— 先拨过窗口,下次导航才会真打 /me 重新验证
+    useSystemStore().bootstrappedAt = Date.now() - BOOTSTRAP_TTL_MS - 1;
     // 带 query:当前就停在 '/',push 相同 fullPath 是 duplicate,guard 不会跑
     await router.push('/?probe=expired');
 
@@ -66,8 +68,22 @@ describe('守卫四步(§2.4 顺序即正确性)', () => {
 
     expect(router.currentRoute.value.name).toBe('home');
     expect(useSystemStore().routesReady).toBe(true);
-    // 首次进入 + 重进各 bootstrap 一次
+    // 首次进入打一次;replace 重进落在 60s 节流窗口内 → 复用,不再打
+    expect(fetchUser).toHaveBeenCalledTimes(1);
+  });
+
+  it('bootstrap 节流:窗口内重复导航不打 /me,越窗后重新验证', async () => {
+    fetchUser.mockResolvedValue(admin);
+    const router = makeRouter();
+    await router.push('/');
+    await router.push('/login'); // 窗口内:复用上次结果
+    expect(fetchUser).toHaveBeenCalledTimes(1);
+
+    // 模拟越过 60s 窗口(导出 TTL 就是给这里用的,不动假时钟)
+    useSystemStore().bootstrappedAt = Date.now() - BOOTSTRAP_TTL_MS - 1;
+    await router.push('/');
     expect(fetchUser).toHaveBeenCalledTimes(2);
+    expect(router.currentRoute.value.name).toBe('home');
   });
 
   it('④ 重建只在守卫里 —— store 的 routesReady 是唯一开关', async () => {

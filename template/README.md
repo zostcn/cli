@@ -56,7 +56,8 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
 ## 换认证通道(§2.5)
 
 模板默认**会话模式**。给还没迁 v2 后端的项目用:
-把 `src/api/auth.ts` 的三个函数实现换成 `src/api/auth.jwt.ts` 里的(JWT 过渡态),
+把 `src/api/auth.ts` 的 `fetchUser` / `login` / `logout` 换成 `src/api/auth.jwt.ts` 里的(JWT 过渡态);
+短信登录 / 注册 / 改密码是 v2 独有端点,换通道时这几个函数与对应页面一并去掉。
 `MeResponse` 形状不变,store / guard / 页面零改动。
 
 ## 关键文件地图
@@ -66,6 +67,7 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
 | 横切逻辑(CSRF / 401 / 403 分流 / 超时) | `src/api/client.ts`(**唯一出口**) |
 | 认证适配器 | `src/api/auth.ts`(唯一需要换的文件) |
 | 路由与菜单 | `src/router/routes.ts`(`meta.roles` 写一处,菜单从路由树派生) |
+| 顶栏 / 导航 / 退出 | `src/layouts/DefaultLayout.vue`(子路由写 `meta.title` 才进导航,roles 复用 `filter.ts`;换长相整个换掉它,派生逻辑照抄) |
 | 权限过滤逻辑 | `src/router/filter.ts`(纯函数,有测试锁着) |
 | 颜色 / 主题 | `src/theme/tokens.css`(6 个语义 token,清空了默认调色板) |
 | 守卫四步 | `src/router/guard.ts`(顺序即正确性,注释写明调错会怎样) |

@@ -9,6 +9,7 @@
 export interface MeUserVO {
   id?: string;
   nickname?: string;
+  phone?: string;
   roles?: string[];
   permissions?: string[];
 }

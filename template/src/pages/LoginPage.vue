@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { sendSmsCode } from '@/api/auth';
+import { messageOf } from '@/api/messageOf';
 import { ApiError } from '@/api/types';
 import { useSystemStore } from '@/stores/system';
 import { computed, onBeforeUnmount, ref } from 'vue';
@@ -38,18 +39,9 @@ const maskedPhone = computed(() =>
     : phone.value,
 );
 
-function messageOf(e: unknown): string {
-  if (!(e instanceof ApiError)) return '登录失败，请稍后再试';
-  switch (e.kind) {
-    case 'rate_limited':
-      return '请求过于频繁，请稍后再试';
-    case 'csrf':
-      return '会话校验失败，请刷新页面重试';
-    case 'client':
-      return e.message || '手机号或密码错误';
-    default:
-      return '服务暂不可用，请稍后再试';
-  }
+/** 共用文案 + 登录场景兜底(401/400 的后端 detail 优先,兜底只在 detail 缺席时出现)。 */
+function loginMessage(e: unknown): string {
+  return messageOf(e, '手机号或密码错误');
 }
 
 function switchMode(next: 'password' | 'sms') {
@@ -71,7 +63,7 @@ async function onSendCode() {
       if (cooldown.value <= 0) window.clearInterval(cooldownTimer);
     }, 1000);
   } catch (e) {
-    error.value = messageOf(e);
+    error.value = loginMessage(e);
   }
 }
 
@@ -99,7 +91,7 @@ async function onSubmit() {
       error.value = '';
       return;
     }
-    error.value = messageOf(e);
+    error.value = loginMessage(e);
   }
 }
 
@@ -241,6 +233,19 @@ onBeforeUnmount(() => window.clearInterval(cooldownTimer));
         class="text-sm text-danger"
       >
         {{ error }}
+      </p>
+      <!-- 步进视图里藏起注册入口:那时用户已有账号,这个链接只会添乱 -->
+      <p
+        v-if="mode !== 'stepUp'"
+        class="text-sm text-muted"
+      >
+        还没有账号？
+        <RouterLink
+          to="/register"
+          class="text-primary"
+        >
+          注册
+        </RouterLink>
       </p>
     </form>
   </main>

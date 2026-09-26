@@ -6,9 +6,12 @@
  * OpenAPI spec version: 2.0.0
  */
 
-export interface SmsSendRequest {
-  /** @minLength 1 */
-  phone: string;
-  /** @pattern login|register */
-  purpose?: string;
+export interface ChangePasswordRequest {
+  oldPassword?: string;
+  code?: string;
+  /**
+     * @minLength 8
+     * @maxLength 2147483647
+     */
+  newPassword: string;
 }

@@ -1,4 +1,5 @@
-import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query';
+import { VueQueryPlugin } from '@tanstack/vue-query';
+import { createQueryClient } from './api/queryClient';
 import { createPinia } from 'pinia';
 import { createApp } from 'vue';
 import App from './App.vue';
@@ -15,8 +16,9 @@ const app = createApp(App);
 const pinia = createPinia();
 app.use(pinia);
 
-// 生成的 vue-query hooks 需要 Provider —— 少了它,第一个 useQuery 就炸
-app.use(VueQueryPlugin, { queryClient: new QueryClient() });
+// 生成的 vue-query hooks 需要 Provider —— 少了它,第一个 useQuery 就炸。
+// 默认值(staleTime/4xx 不重试)在 queryClient.ts,模板级统一管。
+app.use(VueQueryPlugin, { queryClient: createQueryClient() });
 
 app.directive('safe-html', vSafeHtml);
 app.directive('permission', vPermission);

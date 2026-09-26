@@ -30,11 +30,13 @@ import type {
 } from 'vue';
 
 import type {
+  ChangePasswordRequest,
   DeviceVO,
   IssueRequest,
   IssuedTokenVO,
   LoginRequest,
   MeResponse,
+  RegisterRequest,
   RevokeRequest,
   SmsLoginRequest,
   SmsSendRequest,
@@ -348,6 +350,128 @@ const {mutation: mutationOptions} = options ?
         TContext
       > => {
       return useMutation(getPostAuthSmsLoginMutationOptions(options), queryClient);
+    }
+    export const postAuthRegister = (
+    registerRequest: MaybeRefOrGetter<RegisterRequest>,
+ signal?: AbortSignal
+) => {
+      registerRequest = toValue(registerRequest);
+
+      return customInstance<MeResponse>(
+      {url: `/api/auth/register`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: registerRequest, signal
+    },
+      );
+    }
+
+
+
+
+export const getPostAuthRegisterMutationKey = () => ['postAuthRegister'] as const;
+
+export const getPostAuthRegisterMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,PostAuthRegisterMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,PostAuthRegisterMutationVariables, TContext> => {
+
+const mutationKey = getPostAuthRegisterMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAuthRegister>>, PostAuthRegisterMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAuthRegister(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAuthRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthRegister>>>
+    export type PostAuthRegisterMutationBody = RegisterRequest
+    export type PostAuthRegisterMutationError = unknown
+    export type PostAuthRegisterMutationVariables = {data: RegisterRequest}
+
+    export const usePostAuthRegister = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthRegister>>, TError,PostAuthRegisterMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof postAuthRegister>>,
+        TError,
+        PostAuthRegisterMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostAuthRegisterMutationOptions(options), queryClient);
+    }
+    export const postAuthPassword = (
+    changePasswordRequest: MaybeRefOrGetter<ChangePasswordRequest>,
+ signal?: AbortSignal
+) => {
+      changePasswordRequest = toValue(changePasswordRequest);
+
+      return customInstance<void>(
+      {url: `/api/auth/password`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: changePasswordRequest, signal
+    },
+      );
+    }
+
+
+
+
+export const getPostAuthPasswordMutationKey = () => ['postAuthPassword'] as const;
+
+export const getPostAuthPasswordMutationOptions = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthPassword>>, TError,PostAuthPasswordMutationVariables, TContext>, }
+): UseMutationOptions<Awaited<ReturnType<typeof postAuthPassword>>, TError,PostAuthPasswordMutationVariables, TContext> => {
+
+const mutationKey = getPostAuthPasswordMutationKey();
+const {mutation: mutationOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof postAuthPassword>>, PostAuthPasswordMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  postAuthPassword(data,)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PostAuthPasswordMutationResult = NonNullable<Awaited<ReturnType<typeof postAuthPassword>>>
+    export type PostAuthPasswordMutationBody = ChangePasswordRequest
+    export type PostAuthPasswordMutationError = unknown
+    export type PostAuthPasswordMutationVariables = {data: ChangePasswordRequest}
+
+    export const usePostAuthPassword = <TError = unknown,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof postAuthPassword>>, TError,PostAuthPasswordMutationVariables, TContext>, }
+ , queryClient?: QueryClient): UseMutationReturnType<
+        Awaited<ReturnType<typeof postAuthPassword>>,
+        TError,
+        PostAuthPasswordMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPostAuthPasswordMutationOptions(options), queryClient);
     }
     export const postAuthLogout = (
 
