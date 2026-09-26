@@ -13,10 +13,10 @@ import type { MeResponse } from "./generated/models";
 /**
  * 认证适配器 —— **模板里唯一需要换的文件**(§2.5)。
  *
- * 现在是**会话模式**(目标态):cookie 会话 + CSRF。
- * 要给还没迁 v2 后端的项目用,换成 `auth.jwt.ts` 里那份的 export 即可,
- * `MeResponse` 形状不变,上层(store / guard / 页面)零改动。
- * (短信登录/注册是 v2 独有端点,v1/JWT 过渡态没有 —— 换 JWT 模式时这几函数一并去掉。)
+ * 这份是**会话模式**(模板默认,同站项目直接用):cookie 会话 + CSRF。
+ * 跨站项目(tab 扩展 / electron / blog)换 `auth.token.ts` 的 Bearer 通道 ——
+ * `MeResponse` 形状不变,store / guard 对通道无感;但登录 / 注册 / 账号安全页
+ * 与 store 的三个登录动作要一并删(令牌通道没有那些入口),见 README。
  *
  * csrfToken 的写入点:
  * ① `fetchUser`(每次 bootstrap)—— 会话建立/轮换都从 /me 权威获取;

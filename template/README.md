@@ -1,10 +1,8 @@
 # zost 前端模板
 
-`zostcn/cli` 仓库的模板本体 —— **机制完整,不含任何「长什么样」的决定**(§2.2)。
-设计规格见 `api` 仓库的 `docs/新后端与前端模板设计及迁移方案.md` §2。
-
-> 本轮只交付 `template/`。脚手架命令(`zost-cli create`)是下一轮;
-> 现在起项目 = 拷贝本目录 + 改 `package.json` 的 name / vite `base`。
+`zostcn/cli` 仓库的 `template/` —— **机制完整,不含任何「长什么样」的决定**(§2.2)。
+起项目用脚手架:`npx github:zostcn/cli create <项目名>`(拷本目录手改 name / base / title 也行)。
+设计见 `api` 仓库的 `docs/新后端与前端模板设计及迁移方案.md` §2。
 
 ## 跑起来
 
@@ -60,19 +58,29 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
    `eslint-config-prettier` 关掉了全部格式类规则;谁再往 ESLint 加格式规则,
    或绕开 `npm run format` 手调风格,就会重现「格式化一次、lint 打回来」的拉锯。
 
-## 换认证通道(§2.5)
+## 跨站项目换令牌通道(§2.5)
 
-模板默认**会话模式**。给还没迁 v2 后端的项目用:
-把 `src/api/auth.ts` 的 `fetchUser` / `login` / `logout` 换成 `src/api/auth.jwt.ts` 里的(JWT 过渡态);
-短信登录 / 注册 / 改密码是 v2 独有端点,换通道时这几个函数与对应页面一并去掉。
-`MeResponse` 形状不变,store / guard / 页面零改动。
+模板默认**会话模式**(同站)。`tab` / `photo-backup-electron` / `blog` 这类跨站客户端
+cookie 发不出去(`SameSite=Lax`,浏览器规则),换 **v2 Bearer 令牌通道**:
+
+1. `src/api/auth.ts` 换成 `src/api/auth.token.ts` 的 export(`fetchUser` / `logout` / `setToken`)
+2. 删掉登录 / 注册 / 账号安全页与对应路由 —— 令牌通道没有这些入口
+3. store 里 `loginAs` / `loginWithSms` / `register` 三个动作一并删(它们 import 自 `auth.ts`)
+4. 客户端拿到令牌(raw)后 `setToken(...)`,此后 `/me` 自动带 `Authorization: Bearer`,
+   **免 CSRF**(后端 `BearerRequestMatcher` 豁免);无 refresh 概念,失效即重签
+
+> ⚠️ **首个令牌怎么拿,v2 还没有匿名端点** —— `POST /api/auth/token/issue` 要求已有登录态,
+> 「密码换令牌」不存在。迁这三个项目时先定首签方式(候选:登录接口加 `issueToken=true`、
+> 或管理员预签)。在那之前 `auth.token.ts` 只覆盖「已有令牌如何携带」。
+
+`MeResponse` 形状不变,store 其余部分 / guard / 主题对通道无感。
 
 ## 关键文件地图
 
 | 要改什么                               | 改哪                                                                                                                 |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 横切逻辑(CSRF / 401 / 403 分流 / 超时) | `src/api/client.ts`(**唯一出口**)                                                                                    |
-| 认证适配器                             | `src/api/auth.ts`(唯一需要换的文件)                                                                                  |
+| 认证适配器                             | `src/api/auth.ts`(会话,默认)/ `auth.token.ts`(跨站 Bearer,换法见上一节)                                              |
 | 路由与菜单                             | `src/router/routes.ts`(`meta.roles` 写一处,菜单从路由树派生)                                                         |
 | 顶栏 / 导航 / 退出                     | `src/layouts/DefaultLayout.vue`(子路由写 `meta.title` 才进导航,roles 复用 `filter.ts`;换长相整个换掉它,派生逻辑照抄) |
 | 权限过滤逻辑                           | `src/router/filter.ts`(纯函数,有测试锁着)                                                                            |
