@@ -54,6 +54,27 @@ const nginx = await read("deploy/nginx.conf.example");
 assert.ok(!nginx.includes("<项目名>"), "nginx 里残留 <项目名> 占位");
 assert.ok(nginx.includes("/srv/zost/demo-app/dist"), "nginx root 没换掉");
 
+// --- 部署流水线:站点 conf(测试机形态)与 workflow 都要参数化到位 ---
+const deployConf = await read("deploy/nginx.conf");
+assert.ok(
+  !deployConf.includes("<项目名>"),
+  "deploy/nginx.conf 里残留 <项目名> 占位",
+);
+assert.ok(
+  deployConf.includes("/srv/zost/demo-app/current"),
+  "deploy/nginx.conf 路径没换掉",
+);
+
+const workflow = await read(".github/workflows/deploy.yml");
+assert.ok(
+  workflow.includes("PROJECT: demo-app"),
+  "workflow 的 PROJECT 没参数化",
+);
+assert.ok(
+  !workflow.includes("<项目名>"),
+  "workflow 里残留 <项目名> 占位",
+);
+
 const readme = await read("README.md");
 assert.match(readme, /^# demo-app$/m, "README 标题没换掉");
 assert.ok(readme.includes("由 `zost-cli create` 生成"), "README 开头没换成生成说明");
@@ -118,7 +139,16 @@ const packed = spawnSync(
 );
 assert.equal(packed.status, 0, `从 npm 包里生成失败:\n${packed.stderr}`);
 const pdir = path.join(fromPack, "packed-app");
-for (const name of [".gitignore", ".npmrc", ".env.example", "package.json"]) {
+for (const name of [
+  ".gitignore",
+  ".npmrc",
+  ".env.example",
+  "package.json",
+  "deploy/nginx.conf",
+  // .github 在 npm 默认剔除名单的边缘地带(与 .gitignore/.npmrc 同类风险),
+  // 这条断言是它进了包的唯一守卫 —— 没了它,registry 路径生成的项目不带流水线。
+  ".github/workflows/deploy.yml",
+]) {
   assert.ok(existsSync(path.join(pdir, name)), `registry 包生成的项目缺 ${name}`);
 }
 assert.ok(

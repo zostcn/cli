@@ -86,8 +86,28 @@ cookie 发不出去(`SameSite=Lax`,浏览器规则),换 **v2 Bearer 令牌通道
 | 权限过滤逻辑                           | `src/router/filter.ts`(纯函数,有测试锁着)                                                                            |
 | 颜色 / 主题                            | `src/theme/tokens.css`(6 个语义 token,清空了默认调色板)                                                              |
 | 守卫四步                               | `src/router/guard.ts`(顺序即正确性,注释写明调错会怎样)                                                               |
-| 部署 / CSP                             | `deploy/nginx.conf.example`                                                                                          |
+| 部署流水线                             | `.github/workflows/deploy.yml`(env 块集中改:服务器 / 保留数)                                                        |
+| 站点 conf(CSP/回退/反代)              | `deploy/nginx.conf`(测试机形态,生成即可推)/ `deploy/nginx.conf.example`(生产形态参照)                              |
 | 接口生成范围                           | `orval.config.ts` 的 `filters.tags`(模块 tag = 按需生成粒度)                                                         |
+
+## 部署(推送即上线)
+
+前置(**全生态一次性**):仓库 secrets 配 `SSH_PRIVATE_KEY` + `SSH_KNOWN_HOSTS`
+(与 `api` 仓同一套部署 key);服务器共享 nginx 已就位(见
+`/srv/docker-app/nginx/docker-compose.yml` 头注释)。然后:
+
+```bash
+git init -b main && git add -A && git commit -m "init"
+git remote add origin git@github.com:zostcn/<仓库名>.git && git push -u origin main
+```
+
+push `main` 即自动:测试 → 构建(显式 `VITE_API_BASE_URL=服务器IP`,B12 强制)
+→ 版本化上传 `releases/<时间戳-短sha>` → `nginx -t` 校验站点 conf 后热加载
+→ 原子切 `current` → 保留 3 个可回滚。地址 = `http://<DEPLOY_HOST>/<项目名>/`,
+`/api/` 由共享 nginx 同域反代到 `api:8080`(与 dev 同构,cookie/CSRF 零改造)。
+
+换项目只改 workflow env 块的 `PROJECT`;换服务器改 `DEPLOY_HOST` + 两个 secrets;
+上主站的形态差异逐条见 `deploy/nginx.conf` 头注释(对照 `.example`)。
 
 ## 已知的坑(都实测过,别重踩)
 

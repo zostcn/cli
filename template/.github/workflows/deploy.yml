@@ -1,0 +1,109 @@
+# 前端 CI + 部署(2026-09-27 在测试机实测一次过,首跑见 testapp)。
+#
+# 骨架 = `files` 仓的 deploy.yml(releases 版本化 + index.html 校验 + 原子软链 + 保留 N 个)
+#       + `api` 仓的 deploy.yml(concurrency、配置集中顶部 env、ssh-agent + known_hosts)。
+# 与 files 的两点差异:
+#   ① 站点由**共享 nginx 容器**托管(全机唯一占 80 端口,edge 网络反代 api:8080)——
+#      本流水线连带部署站点 conf:先 `docker exec nginx nginx -t`,失败即还原,不动线上。
+#   ② 构建必须显式 VITE_API_BASE_URL(B12 强制,空值直接 throw)——
+#      测试机是同域反代 → 填服务器 IP(与页面同源,cookie/CSRF 走 /api/ 同 dev)。
+#
+# 需要的 GitHub secrets(**全生态同值,一个仓库配一次即可**):
+#   SSH_PRIVATE_KEY(部署专用私钥)/ SSH_KNOWN_HOSTS(ssh-keyscan 的服务器公钥)
+# 服务器一次性准备(共享 nginx)见 /srv/docker-app/nginx/docker-compose.yml 头注释。
+#
+# 全部单条 ssh + 本地展开变量(照 files 写法)——不用 heredoc,
+# 避开 api 仓实测过的反引号被本地执行、登录壳吞退出码那两类坑。
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.repository }}
+  cancel-in-progress: true
+
+env:
+  # ============================================================
+  # 项目配置:换项目/换服务器只改这里 ↓
+  # ============================================================
+  DEPLOY_HOST: 43.153.213.190 # 测试服务器(腾讯云轻量);迁主服务器改 IP
+  DEPLOY_USER: ubuntu
+  PROJECT: <项目名> # → /srv/zost/<PROJECT>/
+  NODE_VERSION: "22" # 模板要求 ≥22.12(volta 钉 22.18)
+  RELEASE_KEEP: 3 # 服务器保留的历史版本数(>=1)
+  # ============================================================
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      # vue-tsc 类型检查在 build 里(build = typecheck + vite build)
+      - name: Build
+        run: npm run build
+        env:
+          # 同域反代:与页面同源,axios 直接打 /api/(B12 要求生产显式给值)
+          VITE_API_BASE_URL: http://${{ env.DEPLOY_HOST }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server host key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy (versioned releases + conf 校验后热加载)
+        run: |
+          set -euo pipefail
+          VERSION="$(date +%Y%m%d%H%M%S)-${GITHUB_SHA::7}"
+          APP_DIR="/srv/zost/$PROJECT"
+          RELEASE="$APP_DIR/releases/$VERSION"
+          TARGET="$DEPLOY_USER@$DEPLOY_HOST"
+
+          # 1. 远端建目录并上传产物
+          ssh -o BatchMode=yes "$TARGET" "mkdir -p '$RELEASE' '$APP_DIR/conf'"
+          rsync -az -e "ssh -o BatchMode=yes" dist/ "$TARGET:$RELEASE/"
+
+          # 2. 切换前校验产物
+          ssh -o BatchMode=yes "$TARGET" \
+            "test -f '$RELEASE/index.html' || { echo 'ERROR: 缺少 index.html'; exit 1; }"
+
+          # 3. 站点 conf:先备份 → 覆盖 → 容器内 nginx -t → 不过就还原(线上不受影响)
+          ssh -o BatchMode=yes "$TARGET" \
+            "test -f '$APP_DIR/conf/$PROJECT.conf' && cp '$APP_DIR/conf/$PROJECT.conf' '$APP_DIR/conf/.$PROJECT.conf.prev'; true"
+          rsync -az -e "ssh -o BatchMode=yes" deploy/nginx.conf "$TARGET:$APP_DIR/conf/$PROJECT.conf"
+          ssh -o BatchMode=yes "$TARGET" \
+            "docker exec nginx nginx -t || { if [ -f '$APP_DIR/conf/.$PROJECT.conf.prev' ]; then mv '$APP_DIR/conf/.$PROJECT.conf.prev' '$APP_DIR/conf/$PROJECT.conf'; else rm -f '$APP_DIR/conf/$PROJECT.conf'; fi; echo 'ERROR: nginx -t 未通过,conf 已还原'; exit 1; }"
+
+          # 4. 热加载 conf(优雅重载,不断连接)
+          ssh -o BatchMode=yes "$TARGET" "docker exec nginx nginx -s reload"
+
+          # 5. 原子切换 current(软链拨过去即生效)
+          ssh -o BatchMode=yes "$TARGET" "ln -sfn 'releases/$VERSION' '$APP_DIR/current'"
+
+          # 6. 清理旧版本(时间戳-短sha 字典序即时间序;.prev 每次部署覆盖不累积)
+          ssh -o BatchMode=yes "$TARGET" \
+            "cd '$APP_DIR/releases' && ls -1 | sort | head -n -$RELEASE_KEEP | xargs -r rm -rf --"
+
+          echo "deployed $VERSION"

@@ -21,11 +21,13 @@ npx zost-cli create my-app             # 发布 npm 后
 
 脚手架做三件事:① 问答(只有项目名) → ② 拷贝 `template/` → ③ 变量替换。
 替换的落点:`package.json`/`package-lock` 的 name、`index.html` 的 title、
-vite 的 `base`(生产挂 `/<项目名>/`,dev 留根)、nginx 的 `<项目名>` 占位、README 开头。
+vite 的 `base`(生产挂 `/<项目名>/`,dev 留根)、两份 nginx conf 的 `<项目名>` 占位、
+部署 workflow 的 `PROJECT`、README 开头。
 
 一个已知的坑:npm 包**无条件剔除** `.gitignore` / `.npmrc`(`files` 白名单也救不回)——
 所以脚手架内置了这两个文件的兜底内容,拷完缺失才写;内容与 `template/` 里逐字一致,
-`npm test` 断言相等防漂移。
+`npm test` 断言相等防漂移。`.github/workflows/` 属同类风险(被剔了则生成的项目
+不带流水线),`npm test` 的 registry 路径断言它必须存在。
 
 **模板和脚手架必须同仓库**:变量替换是逐字标记匹配,改了模板没同步
 `scaffold.ts` 的规则,`npm test` 直接红 —— 这正是要防的「生成出来的项目路径不对」。
