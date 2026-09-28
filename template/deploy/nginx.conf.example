@@ -19,7 +19,9 @@ server {
     root /srv/zost/<项目名>/dist;
 
     # ---- 安全响应头(B10)----
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.zost.cn;" always;
+    # OSS 域三条放行:connect=直传 XHR、media=音视频预览、frame=PDF(与 OssProperties.urlPrefix 同源)。
+    # script/style 不放 —— 可执行类型被挡正是白名单的意义。
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; frame-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; connect-src 'self' https://api.zost.cn https://zost.oss-cn-chengdu.aliyuncs.com;" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
