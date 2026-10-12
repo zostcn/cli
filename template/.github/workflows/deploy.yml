@@ -1,19 +1,17 @@
-# 前端 CI + 部署(2026-09-27 在测试机实测一次过,首跑见 testapp)。
+# 前端 CI + 部署。
 #
-# 骨架 = `files` 仓的 deploy.yml(releases 版本化 + index.html 校验 + 原子软链 + 保留 N 个)
-#       + `api` 仓的 deploy.yml(concurrency、配置集中顶部 env、ssh-agent + known_hosts)。
-# 与 files 的两点差异:
 #   ① 站点由**共享 nginx 容器**托管(全机唯一占 80 端口,edge 网络反代 api:8080)——
 #      本流水线连带部署站点 conf:先 `docker exec nginx nginx -t`,失败即还原,不动线上。
-#   ② 构建必须显式 VITE_API_BASE_URL(B12 强制,空值直接 throw)——
+#   ② 构建必须显式 VITE_API_BASE_URL(空值直接 throw)——
 #      测试机是同域反代 → 填服务器 IP(与页面同源,cookie/CSRF 走 /api/ 同 dev)。
 #
 # 需要的 GitHub secrets(**全生态同值,一个仓库配一次即可**):
 #   SSH_PRIVATE_KEY(部署专用私钥)/ SSH_KNOWN_HOSTS(ssh-keyscan 的服务器公钥)
+#   API_REPO_TOKEN(fine-grained PAT,Contents:Read,只授 zostcn/api —— 拉 spec 快照)
 # 服务器一次性准备(共享 nginx)见 /srv/docker-app/nginx/docker-compose.yml 头注释。
 #
-# 全部单条 ssh + 本地展开变量(照 files 写法)——不用 heredoc,
-# 避开 api 仓实测过的反引号被本地执行、登录壳吞退出码那两类坑。
+# 全部单条 ssh + 本地展开变量,不用 heredoc —— heredoc 展开时反引号会被
+# 本地执行,登录壳还会吞掉退出码;变量先在本地拼好再送远端,两类坑都绕开。
 
 name: Deploy
 
@@ -52,6 +50,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # 生成物不进仓库 —— 构建期从快照现生成。
+      # spec 取 api 仓 docs/openapi.json 跨仓 raw 下载,不打运行中的后端
+      #(springdoc 只在 dev profile 开,切 prod 即挂);快照新鲜度由 api 仓 CI 闸保证。
+      - name: Fetch spec snapshot & generate API client
+        env:
+          API_REPO_TOKEN: ${{ secrets.API_REPO_TOKEN }}
+        run: |
+          set -euo pipefail
+          curl -fsS \
+            -H "Authorization: Bearer $API_REPO_TOKEN" \
+            -H "Accept: application/vnd.github.raw" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/zostcn/api/contents/docs/openapi.json \
+            -o openapi.json \
+          || { echo "::error::取 api 仓快照失败 —— 检查 secrets.API_REPO_TOKEN(fine-grained PAT,Contents:Read,只授 zostcn/api)与该文件是否已提交"; exit 1; }
+          OPENAPI_SPEC="$PWD/openapi.json" npm run gen
+
       - name: Test
         run: npm test
 
@@ -59,7 +74,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          # 同域反代:与页面同源,axios 直接打 /api/(B12 要求生产显式给值)
+          # 同域反代:与页面同源,axios 直接打 /api/(生产必须显式给值,留空构建失败)
           VITE_API_BASE_URL: http://${{ env.DEPLOY_HOST }}
 
       - name: Setup SSH

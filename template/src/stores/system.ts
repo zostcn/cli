@@ -18,9 +18,9 @@ import type { MeUserVO } from "@/api/generated/models";
 export const BOOTSTRAP_TTL_MS = 60_000;
 
 /**
- * 认证状态 —— **只存内存**(B5):刷新即丢,权威来源永远是 `GET /api/auth/me`。
+ * 认证状态 —— **只存内存**:刷新即丢,权威来源永远是 `GET /api/auth/me`。
  * 刻意**不用 persist**:持久化的 user 是一份会过期的真相,
- * 而 persist 一旦开着,以后加字段默认全被写进 storage(omit 黑名单的老问题)。
+ * 而 persist 一旦开着,以后加字段默认全被写进 storage。
  * CSRF token 同理只在 memory.ts,不进 store(避免 devtools 里直接可见)。
  */
 export const useSystemStore = defineStore("system", {
@@ -29,7 +29,7 @@ export const useSystemStore = defineStore("system", {
     bootstrapped: false,
     /** 最近一次**成功** bootstrap 的时刻 —— 窗口内导航复用结果,不打 /me(见 bootstrap)。 */
     bootstrappedAt: 0,
-    /** 守卫注册动态路由的完成标记 —— 只在 guard 里翻转(§2.4:重建放守卫,不放登录回调)。 */
+    /** 守卫注册动态路由的完成标记 —— 只在 guard 里翻转(重建放守卫,不放登录回调)。 */
     routesReady: false,
   }),
   getters: {
@@ -47,7 +47,7 @@ export const useSystemStore = defineStore("system", {
      *
      * 错误分流是守卫 `reason=unavailable` 的前提,不能全吞:
      * `unauthorized` → 匿名(正常态,置 null,**也是确定答案,同样盖时间节流**);
-     * **其他错误(网络断/5xx)原样上抛**,由守卫转 `/login?reason=unavailable`(§2.4),
+     * **其他错误(网络断/5xx)原样上抛**,由守卫转 `/login?reason=unavailable`,
      * 且**不盖时间** —— 后端恢复后的下一次导航必须真重试。
      */
     async bootstrap() {

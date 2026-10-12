@@ -5,12 +5,12 @@ import { loadEnv, type Plugin } from "vite";
 import { defineConfig } from "vitest/config";
 
 /**
- * B12 环境变量纪律,两条:
+ * 环境变量纪律,两条:
  * ① `VITE_*` 里出现 SECRET/KEY/PASSWORD/TOKEN → 构建期直接 throw。
- *    前端产物人人可见,密钥放进来等于公开 —— v1 的 jwt.secret 就是这么泄的。
+ *    密钥放进前端产物等于公开 —— 产物人人可见,谁都能从 bundle 里翻出来。
  * ② 只提交 `.env.example`;`.env`(本地)在 .gitignore 里。
  *
- * dev 代理:模板刻意**不建 `.env.development`**(B12 只允许 .env.example),
+ * dev 代理:模板刻意**不建 `.env.development`**(仓库里只允许 .env.example),
  * 代理目标写死在这里 —— `VITE_API_BASE_URL` 为空即走代理。
  * 同站转发,cookie(ZOST_SESSION / XSRF-TOKEN, SameSite=lax)保持第一方,CSRF 流程照常。
  */

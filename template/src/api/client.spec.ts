@@ -50,7 +50,7 @@ afterEach(() => {
 describe("错误归一化(只看 status,B4)", () => {
   it("401 → kind unauthorized,并广播 auth-cleared", async () => {
     // 夹具用**真实形状**:code 拍平在顶层(Spring 序列化 ProblemDetail.properties 的方式)。
-    // 早先写成 properties:{code} 嵌套 —— 与实际响应不符,测试绿但生产取空(踩过)。
+    // 写成 properties:{code} 嵌套会「测试绿、生产取空」—— 按嵌套取永远拿不到值。
     stub({
       status: 401,
       data: { status: 401, detail: "未登录", code: "UNAUTHORIZED" },
@@ -90,7 +90,7 @@ describe("错误归一化(只看 status,B4)", () => {
   });
 
   it("响应体里有 code 字段也**不看** —— 分流只认 HTTP status", async () => {
-    // v1 的 401 曾把 code 写成 500:判 code 会把「没登录」误读成「服务器炸了」
+    // body.code 与真实 status 脱节时判它就会分流错(把 401 当 5xx)—— 分流只认 HTTP status
     stub({ status: 401, data: { code: 500, msg: "boom" } });
     await expect(
       customInstance({ url: "/api/x", method: "GET" }),
@@ -120,7 +120,7 @@ describe("错误归一化(只看 status,B4)", () => {
   });
 
   it("409 步进:顶层 code 原样带进 ApiError.code(LoginPage 分流靠它)", async () => {
-    // 这条是 409 进不了步进视图那次回归的锁:code 必须从**顶层**取(拍平序列化),
+    // code 必须从**顶层**取(拍平序列化,按 properties 嵌套取会拿到 undefined),
     // 且 kind 必须是 client(不是 unauthorized —— 401 会触发登出)。
     stub({
       status: 409,

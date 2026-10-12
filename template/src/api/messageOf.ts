@@ -2,7 +2,7 @@ import { ApiError } from "./types";
 
 /**
  * ApiError → 用户可见文案。登录 / 注册 / 改密页共用一份 ——
- * 分流语义见 `client.ts`（kind 只由 HTTP status 推出，B4）。
+ * 分流语义见 `client.ts`（kind 只由 HTTP status 推出）。
  *
  * `fallback` 给调用场景留一句话术（登录页传「手机号或密码错误」这类场景兜底）。
  */

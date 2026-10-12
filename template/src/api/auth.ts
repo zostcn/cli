@@ -11,7 +11,7 @@ import {
 import type { MeResponse } from "./generated/models";
 
 /**
- * 认证适配器 —— **模板里唯一需要换的文件**(§2.5)。
+ * 认证适配器 —— **模板里唯一需要换的文件**。
  *
  * 这份是**会话模式**(模板默认,同站项目直接用):cookie 会话 + CSRF。
  * 跨站项目(tab 扩展 / electron / blog)换 `auth.token.ts` 的 Bearer 通道 ——

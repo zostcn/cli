@@ -11,7 +11,7 @@ import type { RouteRecordRaw } from "vue-router";
  * - 生效 roles 与用户 roles **无交集** → 剔除该节点(父被剔,子随之消失);
  * - 用户 roles 为空数组 → 一切需要角色的分支都被剔除。
  *
- * 这是权限三层(B7)的第二层;第三层守卫兜底,第一层是类型/常量。
+ * 这是权限三层的第二层;第三层守卫兜底,第一层是类型/常量。
  */
 export function filterRoutesByRoles(
   routes: RouteRecordRaw[],

@@ -9,7 +9,7 @@ import LoginPage from "./LoginPage.vue";
 
 /**
  * LoginPage 的**页面级分流**回归锁。client.spec 锁的是错误形状(拍平 code),
- * 这里锁的是页面怎么用它 —— 409 进不了步进视图那次踩坑,两边缺一不可。
+ * 这里锁的是页面怎么用它 —— 409 必须在页面层拦下,否则进不了步进视图,两边缺一不可。
  */
 
 // 只替掉 sendSmsCode(断言「409 不自动发码」),store 动作保持真身再用 spy 掉。

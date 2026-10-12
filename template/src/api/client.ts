@@ -3,8 +3,8 @@ import { emitAuthCleared, getCsrf } from "./memory";
 import { ApiError, type ProblemDetailLike } from "./types";
 
 /**
- * 全项目**唯一**的 HTTP 出口(H3):CSRF 注入、401/403 分流、错误归一化
- * 全部只写在这里 —— orval 生成物因此可以一行手写逻辑都没有(§2.7)。
+ * 全项目**唯一**的 HTTP 出口:CSRF 注入、401/403 分流、错误归一化
+ * 全部只写在这里 —— orval 生成物因此可以一行手写逻辑都没有。
  */
 export const http = axios.create({
   // 空 = dev 走 vite 代理(/api → 127.0.0.1:8080);生产 = VITE_API_BASE_URL
@@ -20,7 +20,7 @@ http.interceptors.request.use((config) => {
   if (token && method !== "get" && method !== "head") {
     config.headers.set("X-XSRF-TOKEN", token);
   }
-  // B12 上传规则:multipart 显式 0(=不超时)。全局 15s 会把大文件中途 abort,
+  // 上传规则:multipart 显式 0(=不超时)。全局 15s 会把大文件中途 abort,
   // 用户看到「网络异常」而后端还在收包。**不要改全局值**,那会把快速失败变成整站假死。
   if (config.data instanceof FormData) {
     config.timeout = 0;
@@ -44,7 +44,7 @@ function readHeader(headers: unknown, name: string): string | undefined {
   return undefined;
 }
 
-/** 只看 status(B4)。ProblemDetail 的 code 仅作元数据带上。 */
+/** 只看 status。ProblemDetail 的 code 仅作元数据带上。 */
 function toApiError(error: unknown): ApiError {
   if (!axios.isAxiosError(error)) {
     return new ApiError(
@@ -56,18 +56,18 @@ function toApiError(error: unknown): ApiError {
   const err = error as AxiosError<ProblemDetailLike>;
   const status = err.response?.status ?? 0;
   const data = err.response?.data;
-  // code 拍平在顶层(Spring 对 RFC 9457 properties 的序列化,实测),且**只认字符串** ——
-  // v1 遗留的数字 code:500 不是 ProblemDetail 的东西,别带进元数据(踩过 properties 嵌套取空)。
+  // code 拍平在顶层(Spring 对 RFC 9457 properties 的序列化),且**只认字符串** ——
+  // 数字 code 不是 ProblemDetail 的东西,别带进元数据;按 properties 嵌套取则永远取空。
   const code = typeof data?.code === "string" ? data.code : undefined;
   const message = data?.detail ?? err.message;
 
   let kind: ApiError["kind"];
   if (status === 0 || status >= 500) {
-    kind = "unavailable"; // §2.4:吞 0/5xx → 跳 /login?reason=unavailable
+    kind = "unavailable"; // 吞 0/5xx → 跳 /login?reason=unavailable
   } else if (status === 401) {
     kind = "unauthorized";
   } else if (status === 403) {
-    // §2.4 403 分流:CSRF 失败 ≠ 权限不足 —— 提示错了用户会去找管理员
+    // 403 分流:CSRF 失败 ≠ 权限不足 —— 提示错了用户会去找管理员
     kind =
       readHeader(err.response?.headers, "X-CSRF-Failed") === "true"
         ? "csrf"
@@ -94,15 +94,14 @@ http.interceptors.response.use(
 );
 
 /**
- * orval mutator —— **参数类型必须内联写在签名里**(实测):
+ * orval mutator —— **参数类型必须内联写在签名里**:
  * orval 解析的是 mutator 的**源码文本**,写成引用类型(`config: MutatorConfig`)
  * 它认不出 → 回落 fetch 风格,生成 `(url, {body, headers})` + `{data,status,headers}`
  * 信封类型,与拦截器返回裸体的现实对不上(类型直接红)。
- * 内联后生成 `customInstance<T>({url, method, headers, data})`,`T` 是裸数据 ——
- * 与 tab / files 两个已跑通的项目同款。
+ * 内联后生成 `customInstance<T>({url, method, headers, data})`,`T` 是裸数据。
  *
  * 拦截器挂在 `http` 上,CSRF 注入 / 401 分流 / 错误归一化对生成物自动生效 ——
- * 生成物里一行手写逻辑都没有(§2.7)。
+ * 生成物里一行手写逻辑都没有。
  */
 export const customInstance = <T>(config: {
   url: string;

@@ -15,14 +15,13 @@ const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
 const README_INTRO_LINES = [
   "# zost 前端模板",
   "",
-  "`zostcn/cli` 仓库的 `template/` —— **机制完整,不含任何「长什么样」的决定**(§2.2)。",
+  "`zostcn/cli` 仓库的 `template/` —— **机制完整,不含任何「长什么样」的决定**。",
   "起项目用脚手架:`npx github:zostcn/cli create <项目名>`(拷本目录手改 name / base / title 也行)。",
-  "设计见 `api` 仓库的 `docs/新后端与前端模板设计及迁移方案.md` §2。",
 ];
 
 /**
  * npm 包**无条件剔除** `.gitignore` / `.npmrc`(npm-packing 规则,
- * `files` 白名单也救不回,实测 npm 10.8.2)。走 registry 的脚手架因此拷不到它们:
+ * `files` 白名单也救不回——npm 10.8.2 就是这样)。走 registry 的脚手架因此拷不到它们:
  * 生成的项目会缺 `.npmrc`(`npm install` 撞 arborist 崩溃)与 `.gitignore`(`.env` 可能被提交)。
  * 拷完若仍缺失就用这里兜底写;内容必须与 `template/` 里那两个文件逐字一致 —— smoke 断言相等防漂移。
  */
@@ -33,10 +32,15 @@ dist/
 .env.*
 !.env.example
 *.local
+
+# orval 生成物 —— 不进仓库，CI/本地跑 npm run gen 现生成
+src/api/generated/
+# CI 拉的 spec 快照(zostcn/api docs/openapi.json) —— 取来的工件不入库
+/openapi.json
 `,
   ".npmrc": `# npm 10.8.2 的 arborist 解析 vitest 5 的 peer 图时会崩
 # (\`TypeError: Cannot read properties of null (reading 'edgesOut')\`,#  @npmcli/arborist build-ideal-tree #loadPeerSet)。
-# legacy-peer-deps 绕开该路径;模板的依赖是精确版本(D4),peer 宽松解析不引入漂移。
+# legacy-peer-deps 绕开该路径;模板的依赖是精确版本,peer 宽松解析不引入漂移。
 legacy-peer-deps=true
 `,
 };

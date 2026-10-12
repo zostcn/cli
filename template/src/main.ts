@@ -26,7 +26,7 @@ app.directive("permission", vPermission);
 const router = createAppRouter();
 router.beforeEach(createAuthGuard(router));
 
-// 第一道网(§2.4):导航期抛出的 unavailable 错误若再冒给 vue-router,
+// 第一道网:导航期抛出的 unavailable 错误若再冒给 vue-router,
 // 导航会被**静默取消** —— 症状是整站白屏且刷新无效。吞掉,停在当前页。
 router.onError((err) => {
   if (err instanceof ApiError && err.kind === "unavailable") {
@@ -35,7 +35,7 @@ router.onError((err) => {
   console.error("[router]", err);
 });
 
-// 第二道网(§2.4):组件渲染期异常。router.onError 管不到这块。
+// 第二道网:组件渲染期异常。router.onError 管不到这块。
 app.config.errorHandler = (err, _vm, info) => {
   console.error("[app]", err, info);
 };

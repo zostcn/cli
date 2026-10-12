@@ -6,7 +6,7 @@
   import { useRouter } from "vue-router";
 
   /**
-   * 信任设备管理（§1.12）：列表 + 吊销。
+   * 信任设备管理：列表 + 吊销。
    *
    * 吊销 = **踢下线**（后端 DeviceRevocationFilter 下个请求作废该设备的会话）——
    * 吊销「当前设备」会把自己登出，所以确认文案必须点明，确认后主动走 logout 收尾。

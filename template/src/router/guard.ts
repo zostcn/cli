@@ -5,7 +5,7 @@ import type { Router } from "vue-router";
 import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
 
 /**
- * 守卫四步,**顺序即正确性**(§2.4 第一行,调错就复现那条故障):
+ * 守卫四步,**顺序即正确性**(顺序调错,下面各步标注的故障就会发生):
  *
  * ① 先补认证上下文(**含公开页**)—— /login 页要靠它拿到 csrfToken;
  *    提前 return 的话首次 `POST /login` 恒 403,**永远登不进去**。
@@ -14,7 +14,7 @@ import type { NavigationGuardNext, RouteLocationNormalized } from "vue-router";
  * ④ 路由未就绪 → 按角色过滤、注入、标记就绪、**replace 重进**。
  *
  * ④ 放守卫**而不是登录回调**:放回调的话,刷新后 routesReady 丢失、
- * 而回调不会再跑,动态路由就再也回不来(§2.4「路由重建位置」)。
+ * 而回调不会再跑,动态路由就再也回不来。
  */
 export function createAuthGuard(router: Router) {
   return async function guard(
@@ -28,7 +28,7 @@ export function createAuthGuard(router: Router) {
     try {
       await store.bootstrap();
     } catch {
-      // 后端不可达:跳登录并标记原因(§2.4)。已经在 /login 且带了标记 → 停住,别重定向循环。
+      // 后端不可达:跳登录并标记原因。已经在 /login 且带了标记 → 停住,别重定向循环。
       if (to.path === "/login" && to.query.reason === "unavailable") {
         next();
       } else {

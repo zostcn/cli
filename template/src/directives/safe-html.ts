@@ -2,7 +2,7 @@ import DOMPurify from "dompurify";
 import type { Directive } from "vue";
 
 /**
- * `v-safe-html` —— 唯一允许写 innerHTML 的通道(B11)。
+ * `v-safe-html` —— 唯一允许写 innerHTML 的通道。
  *
  * 两条纪律:
  * ① **双生命周期(mounted + updated)**:只在 mounted 清洗,数据变了以后

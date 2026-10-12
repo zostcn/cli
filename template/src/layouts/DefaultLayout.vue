@@ -6,10 +6,10 @@
   import { useRoute, useRouter } from "vue-router";
 
   /**
-   * 带顶栏的布局壳 —— 机制只有三样,样式只是 token 里的几个类,不决定长相(§2.2):
+   * 带顶栏的布局壳 —— 机制只有三样,样式只是 token 里的几个类,不决定长相:
    *
    * ① **站名** → 回首页(首页不写 `meta.title`,不在导航里重复出现);
-   * ② **导航从路由树派生**(B6 的兑现):子路由写 `meta.title` 才进导航,
+   * ② **导航从路由树派生**:子路由写 `meta.title` 才进导航,
    *    roles 用与守卫 ④ **同一份** `filterRoutesByRoles` 过滤 ——
    *    权限与菜单只维护 route meta 一处,没有第二份菜单配置;
    * ③ **退出** —— 原来散在 HomePage,收进布局后每页都有。

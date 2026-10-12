@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 /**
- * 主题预置脚本的白名单(B12/§2.4):localStorage 是用户可控输入,
+ * 主题预置脚本的白名单:localStorage 是用户可控输入,
  * 校验必须发生在 classList 之前。
  *
  * theme-init.js 是给 <script> 用的纯 JS,这里用 eval-equivalent 直接执行同一份源码,

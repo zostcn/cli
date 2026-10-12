@@ -4,7 +4,7 @@ import { useSystemStore } from "@/stores/system";
 /**
  * `v-permission="'content:publish'"`(或数组,任一命中即显示)。
  *
- * 权限三层(B7)的第二层:**运行时过滤**。第一层是编译期的类型/常量,
+ * 权限三层的第二层:**运行时过滤**。第一层是编译期的类型/常量,
  * 第三层是路由守卫兜底。
  *
  * ⚠️ **前端隐藏不是安全** —— 后端 `RbacAuthorizationManager` 每请求独立判定,
