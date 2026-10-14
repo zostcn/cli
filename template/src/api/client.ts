@@ -28,6 +28,28 @@ http.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * 匿名认证端点(POST 即可调用,不要求已有会话)。**它们的 401 = 凭据错/账号状态,
+ * 不是「会话过期」—— 所以 401 清态对它们是例外。**
+ *
+ * 后端对「会话过期」与「密码错」都回 401,但语义相反:前者该清态(会话真没了),
+ * 后者此刻根本不存在会话、cookie 里的 CSRF token 依然有效。把登录失败的 401
+ * 也当过期处理、清掉内存 token,重试的登录请求就发不出 X-XSRF-TOKEN
+ * → 后端 CsrfFilter 403。症状固定为「登录失败一次后再点登录 → CSRF 校验失败,
+ * 刷新页面才恢复」(刷新会重打 /me,token 才回来)。
+ */
+const ANONYMOUS_AUTH_URLS = new Set([
+  "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/sms/login",
+]);
+
+function isAnonymousAuthUrl(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  // 生成物(orval)传的是相对路径;baseURL 由 axios 另行拼接,不落在 config.url 里。
+  return ANONYMOUS_AUTH_URLS.has(error.config?.url ?? "");
+}
+
 function readHeader(headers: unknown, name: string): string | undefined {
   if (!headers || typeof headers !== "object") return undefined;
   const h = headers as {
@@ -86,7 +108,9 @@ http.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     const apiError = toApiError(error);
-    if (apiError.kind === "unauthorized") {
+    // 401 → 清态,但匿名认证端点除外:它们的 401 是「凭据错」不是会话过期,
+    // 清了内存 token 下一次登录就发不出 CSRF 头(见 ANONYMOUS_AUTH_URLS)。
+    if (apiError.kind === "unauthorized" && !isAnonymousAuthUrl(error)) {
       emitAuthCleared(); // store 清态;跳转由 main.ts 注册的订阅者做
     }
     return Promise.reject(apiError);

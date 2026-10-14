@@ -69,6 +69,49 @@ describe("错误归一化(只看 status,B4)", () => {
     off();
   });
 
+  it.each(["/api/auth/login", "/api/auth/register", "/api/auth/sms/login"])(
+    "%s 的 401 = 凭据错 → unauthorized 但**不清态**,重试仍带 CSRF 头",
+    async (url) => {
+      // 回归用例:匿名认证端点的 401 若触发清态,内存 token 被清,
+      // 重试的登录请求不再带 X-XSRF-TOKEN → 后端 CsrfFilter 403
+      // (用户看到「登录失败后再点登录 → CSRF 校验失败」)。
+      setCsrf("csrf-abc");
+      const onCleared = vi.fn();
+      const off = onAuthCleared(onCleared);
+      stub({
+        status: 401,
+        data: { status: 401, detail: "手机号或密码错误", code: "UNAUTHORIZED" },
+      });
+
+      await expect(
+        customInstance({ url, method: "POST", data: "{}" }),
+      ).rejects.toMatchObject({ kind: "unauthorized", status: 401 });
+      expect(onCleared).not.toHaveBeenCalled();
+
+      // token 还在 → 重试的写请求照常注入头
+      const seen = stub({ status: 200, data: {} });
+      await customInstance({ url, method: "POST", data: "{}" });
+      expect(seen[0]?.headers.get("X-XSRF-TOKEN")).toBe("csrf-abc");
+      off();
+    },
+  );
+
+  it("已登录接口的 401 照旧清态 —— 例外只给匿名认证端点", async () => {
+    setCsrf("csrf-abc");
+    const onCleared = vi.fn();
+    const off = onAuthCleared(onCleared);
+    stub({
+      status: 401,
+      data: { status: 401, detail: "未登录", code: "UNAUTHORIZED" },
+    });
+
+    await expect(
+      customInstance({ url: "/api/auth/password", method: "POST", data: "{}" }),
+    ).rejects.toMatchObject({ kind: "unauthorized" });
+    expect(onCleared).toHaveBeenCalledTimes(1);
+    off();
+  });
+
   it("403 分流:带 X-CSRF-Failed → csrf;不带 → forbidden", async () => {
     stub({
       status: 403,
