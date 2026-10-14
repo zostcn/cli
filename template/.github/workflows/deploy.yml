@@ -4,6 +4,9 @@
 #      本流水线连带部署站点 conf:先 `docker exec nginx nginx -t`,失败即还原,不动线上。
 #   ② 构建必须显式 VITE_API_BASE_URL(空值直接 throw)——
 #      测试机是同域反代 → 填服务器 IP(与页面同源,cookie/CSRF 走 /api/ 同 dev)。
+#   ③ 上主站时改三处:conf 落点 conf/ → loc/(生产主块的块内 include 收)、
+#      conf 内容换路径片段形态、VITE_API_BASE_URL 换 https://zost.cn ——
+#      逐条对照 deploy/nginx.conf.example。
 #
 # 需要的 GitHub secrets(**全生态同值,一个仓库配一次即可**):
 #   SSH_PRIVATE_KEY(部署专用私钥)/ SSH_KNOWN_HOSTS(ssh-keyscan 的服务器公钥)
@@ -96,8 +99,10 @@ jobs:
           RELEASE="$APP_DIR/releases/$VERSION"
           TARGET="$DEPLOY_USER@$DEPLOY_HOST"
 
-          # 1. 远端建目录并上传产物
-          ssh -o BatchMode=yes "$TARGET" "mkdir -p '$RELEASE' '$APP_DIR/conf'"
+          # 1. 远端建目录并上传产物;webroot/<PROJECT> → current 对齐 URL 前缀
+          #    (站点 conf 用 root 而非 alias,见 deploy/nginx.conf 头注释)
+          ssh -o BatchMode=yes "$TARGET" \
+            "mkdir -p '$RELEASE' '$APP_DIR/conf' '$APP_DIR/webroot' && ln -sfn '$APP_DIR/current' '$APP_DIR/webroot/$PROJECT'"
           rsync -az -e "ssh -o BatchMode=yes" dist/ "$TARGET:$RELEASE/"
 
           # 2. 切换前校验产物

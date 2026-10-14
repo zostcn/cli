@@ -52,7 +52,7 @@ assert.ok(!vite.includes(`base: "/",`), "vite base 还是模板默认值");
 
 const nginx = await read("deploy/nginx.conf.example");
 assert.ok(!nginx.includes("<项目名>"), "nginx 里残留 <项目名> 占位");
-assert.ok(nginx.includes("/srv/zost/demo-app/dist"), "nginx root 没换掉");
+assert.ok(nginx.includes("/srv/zost/demo-app/webroot"), "nginx root 没换掉");
 
 // --- 部署流水线:站点 conf(测试机形态)与 workflow 都要参数化到位 ---
 const deployConf = await read("deploy/nginx.conf");
@@ -61,7 +61,7 @@ assert.ok(
   "deploy/nginx.conf 里残留 <项目名> 占位",
 );
 assert.ok(
-  deployConf.includes("/srv/zost/demo-app/current"),
+  deployConf.includes("/srv/zost/demo-app/webroot"),
   "deploy/nginx.conf 路径没换掉",
 );
 

@@ -92,12 +92,12 @@ function rulesFor(projectName: string): Rule[] {
       expected: -1,
     },
     {
-      // 部署流水线的站点 conf(测试机形态,生成即可推)。精确计数 12:
+      // 部署流水线的站点 conf(测试机形态,生成即可推)。精确计数 13:
       // 模板增删占位必须同步这里,防漏替换出半参数化的 conf。
       file: "deploy/nginx.conf",
       find: `<项目名>`,
       to: projectName,
-      expected: 12,
+      expected: 13,
     },
     {
       // workflow 只有 env 块的 PROJECT 一处参数化,注释里不许再出现占位。

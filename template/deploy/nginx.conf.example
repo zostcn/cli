@@ -1,57 +1,39 @@
-# 模板项目的 nginx 参考配置(安全响应头由 nginx 发,不用 meta 标签)。
+# 路径片段 —— **生产形态**:各前端统一挂主域子路径 zost.cn/<项目名>/。
 #
-# ⚠️ 子路径部署:各前端统一挂在 zost.cn/<项目名>/ 下——
-#    ① vite 的 `base` 与 router 的 `createWebHistory` 必须同为 /<项目名>/(脚手架参数化);
-#    ② 下面 location 的 /<项目名>/ 与 root/alias 一致;
-#    ③ SPA 回退:所有未命中路径 index.html(否则刷新 404)。
+# 生产机(共享 nginx)的机制:zost.cn 主块(人工全权:server 级安全头、/api/
+# 反代、TLS)里有块内 include(/srv/zost/*/loc/*.conf)—— CI 只交本片段,
+# 落 /srv/zost/<项目名>/loc/<项目名>.conf。片段只准写 location:server_name /
+# 证书 / server 级头 / /api/ 反代全部不归 CI 管。
 #
-# 另一条铁律:应用端口**只 bind 127.0.0.1**(vite.config / 后端 server.address
-# 都已如此),否则 nginx 的 CSP / limit_req 全部可被绕过。
+# 与测试机形态(deploy/nginx.conf)的差异只有一条:测试机没有主块,CI 交完整
+# server 块;生产主块已就位,CI 交片段。片段自身(root + webroot 软链、SPA
+# 回退、资源缓存)两处逐字一致 —— 上主站就是把 deploy/nginx.conf 换成本文件、
+# workflow 的 conf 落点 conf/ 换成 loc/,构建的 VITE_API_BASE_URL 换成
+# https://zost.cn。
+#
+# ⚠️ 不用 alias + try_files:try_files 的检查路径是 alias + **完整 $uri**(不剥
+#    location 前缀),检查永远落空、全部请求掉进回退。用 root + 布局对齐:
+#    webroot/<项目名> → current(CI 软链),URI /<项目名>/x 正好映到 current/x。
+# ⚠️ add_header 不继承:location 里只要有一条 add_header,主块同类头全部失效
+#    —— /assets/ 带了 Cache-Control,就必须自带全套安全头(与主块同值);
+#    其余 location 不带 add_header,继承主块。
 
-server {
-    listen 443 ssl http2;
-    server_name www.zost.cn;
+# ---- SPA 壳(未命中路径回 index.html,否则深链刷新 404)----
+location ^~ /<项目名>/ {
+    root /srv/zost/<项目名>/webroot;
+    try_files $uri $uri/ /<项目名>/index.html;
+}
 
-    # ssl_certificate     /etc/nginx/tls/fullchain.pem;
-    # ssl_certificate_key /etc/nginx/tls/privkey.pem;
-
-    # 构建产物(dist)所在目录
-    root /srv/zost/<项目名>/dist;
-
-    # ---- 安全响应头 ----
-    # OSS 域三条放行:connect=直传 XHR、media=音视频预览、frame=PDF(与 OssProperties.urlPrefix 同源)。
-    # script/style 不放 —— 可执行类型被挡正是白名单的意义。
-    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; frame-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; connect-src 'self' https://api.zost.cn https://zost.oss-cn-chengdu.aliyuncs.com;" always;
+# ---- 静态资源(带 hash 的可长缓存;index.html 不走这里)----
+location ^~ /<项目名>/assets/ {
+    root /srv/zost/<项目名>/webroot;
+    expires 1y;
+    # 本行触发 add_header 继承断链 → 下面必须重复主块的全套安全头
+    add_header Cache-Control "public, immutable";
+    add_header Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; frame-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com; connect-src 'self' https://zost.oss-cn-chengdu.aliyuncs.com;" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
     add_header X-Frame-Options "DENY" always;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
-    # ---- 静态资源(带 hash 的可长缓存;index.html 不缓存)----
-    location /<项目名>/assets/ {
-        alias /srv/zost/<项目名>/dist/assets/;
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # ---- SPA 回退 ----
-    location /<项目名>/ {
-        alias /srv/zost/<项目名>/dist/;
-        try_files $uri $uri/ /<项目名>/index.html;
-    }
-
-    # ---- API 走同域反代(CSRF cookie 是 SameSite=lax,同站才带)----
-    # limit_req 是第一层限流:$binary_remote_addr 取 TCP 对端,伪造不了。
-    # 应用里的 RateLimitFilter 是第二层,按业务路径细粒度 —— 两层都要。
-    # limit_req_zone $binary_remote_addr zone=api:10m rate=20r/s;
-    location /api/ {
-        proxy_pass http://127.0.0.1:8080;
-        proxy_set_header Host              $host;
-        proxy_set_header X-Real-IP         $remote_addr;   # **覆盖**不是追加 ——
-        proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        # 后端 ClientIp 只读 X-Real-IP:XFF 的第一个值可被客户端伪造,不可信
-        # limit_req zone=api burst=40 nodelay;
-    }
 }

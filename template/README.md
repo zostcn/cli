@@ -61,29 +61,12 @@ SELECT u.id, r.id FROM `user` u JOIN rbac_role r
    `eslint-config-prettier` 关掉了全部格式类规则;谁再往 ESLint 加格式规则,
    或绕开 `npm run format` 手调风格,就会重现「格式化一次、lint 打回来」的拉锯。
 
-## 跨站项目换令牌通道
-
-模板默认**会话模式**(同站)。`tab` / `photo-backup-electron` / `blog` 这类跨站客户端
-cookie 发不出去(`SameSite=Lax`,浏览器规则),换 **v2 Bearer 令牌通道**:
-
-1. `src/api/auth.ts` 换成 `src/api/auth.token.ts` 的 export(`fetchUser` / `logout` / `setToken`)
-2. 删掉登录 / 注册 / 账号安全页与对应路由 —— 令牌通道没有这些入口
-3. store 里 `loginAs` / `loginWithSms` / `register` 三个动作一并删(它们 import 自 `auth.ts`)
-4. 客户端拿到令牌(raw)后 `setToken(...)`,此后 `/me` 自动带 `Authorization: Bearer`,
-   **免 CSRF**(后端 `BearerRequestMatcher` 豁免);无 refresh 概念,失效即重签
-
-> ⚠️ **首个令牌怎么拿,v2 还没有匿名端点** —— `POST /api/auth/token/issue` 要求已有登录态,
-> 「密码换令牌」不存在。迁这三个项目时先定首签方式(候选:登录接口加 `issueToken=true`、
-> 或管理员预签)。在那之前 `auth.token.ts` 只覆盖「已有令牌如何携带」。
-
-`MeResponse` 形状不变,store 其余部分 / guard / 主题对通道无感。
-
 ## 关键文件地图
 
 | 要改什么                               | 改哪                                                                                                                 |
 | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 横切逻辑(CSRF / 401 / 403 分流 / 超时) | `src/api/client.ts`(**唯一出口**)                                                                                    |
-| 认证适配器                             | `src/api/auth.ts`(会话,默认)/ `auth.token.ts`(跨站 Bearer,换法见上一节)                                              |
+| 认证适配器                             | `src/api/auth.ts`(cookie 会话,唯一通道)                                                                              |
 | 路由与菜单                             | `src/router/routes.ts`(`meta.roles` 写一处,菜单从路由树派生)                                                         |
 | 顶栏 / 导航 / 退出                     | `src/layouts/DefaultLayout.vue`(子路由写 `meta.title` 才进导航,roles 复用 `filter.ts`;换长相整个换掉它,派生逻辑照抄) |
 | 权限过滤逻辑                           | `src/router/filter.ts`(纯函数,有测试锁着)                                                                            |
@@ -110,8 +93,11 @@ push `main` 即自动:测试 → 构建(必须显式给 `VITE_API_BASE_URL=服�
 → 原子切 `current` → 保留 3 个可回滚。地址 = `http://<DEPLOY_HOST>/<项目名>/`,
 `/api/` 由共享 nginx 同域反代到 `api:8080`(与 dev 同构,cookie/CSRF 零改造)。
 
-换项目只改 workflow env 块的 `PROJECT`;换服务器改 `DEPLOY_HOST` + 两个 secrets;
-上主站的形态差异逐条见 `deploy/nginx.conf` 头注释(对照 `.example`)。
+换项目只改 workflow env 块的 `PROJECT`;换服务器改 `DEPLOY_HOST` + 两个 secrets。
+上主站 = 挂主域子路径 `zost.cn/<项目名>/`:CI 只交 location 片段(主块的人工
+include 收录),`deploy/nginx.conf` 换成 `.example` 的片段形态、conf 落点
+`conf/` → `loc/`、`VITE_API_BASE_URL` 换 `https://zost.cn` —— 三条逐条对照
+`deploy/nginx.conf.example` 头注释。
 
 ## 已知的坑
 

@@ -11,12 +11,8 @@ import {
 import type { MeResponse } from "./generated/models";
 
 /**
- * 认证适配器 —— **模板里唯一需要换的文件**。
- *
- * 这份是**会话模式**(模板默认,同站项目直接用):cookie 会话 + CSRF。
- * 跨站项目(tab 扩展 / electron / blog)换 `auth.token.ts` 的 Bearer 通道 ——
- * `MeResponse` 形状不变,store / guard 对通道无感;但登录 / 注册 / 账号安全页
- * 与 store 的三个登录动作要一并删(令牌通道没有那些入口),见 README。
+ * 认证适配器 —— 唯一通道:cookie 会话(`ZOST_SESSION`,SameSite=Lax)+ CSRF。
+ * 模板项目与 api 同在主域(zost.cn)之下,会话 cookie 天然同站携带,不存在跨源客户端。
  *
  * csrfToken 的写入点:
  * ① `fetchUser`(每次 bootstrap)—— 会话建立/轮换都从 /me 权威获取;
