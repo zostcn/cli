@@ -1,14 +1,15 @@
 {
   "name": "zost-cli",
   "version": "0.1.0",
-  "description": "zost.cn 前端项目脚手架 —— 从 template/ 生成新项目",
+  "description": "zost.cn 前端项目脚手架 —— 从 template/(全量)或 template-bare/(白板)生成新项目",
   "type": "module",
   "bin": {
     "zost-cli": "dist/index.js"
   },
   "files": [
     "dist",
-    "template"
+    "template",
+    "template-bare"
   ],
   "engines": {
     "node": ">=20.19.0"

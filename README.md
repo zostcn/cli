@@ -6,9 +6,10 @@
 cli/
 ├── src/
 │   ├── index.ts        # 命令行:参数校验 + 交互问答
-│   └── scaffold.ts     # 拷贝 template/ + 变量替换(规则校验命中次数)
-├── scripts/smoke.mjs   # 自测:生成 → 断言替换/排除/守卫
-└── template/           # 模板本体(机制层,单独可用)
+│   └── scaffold.ts     # 按变体拷贝模板 + 变量替换(规则校验命中次数)
+├── scripts/smoke.mjs   # 自测:生成 → 断言替换/排除/守卫(双变体)
+├── template/           # 全量模板(机制层:登录/接口层齐,单独可用)
+└── template-bare/      # 白板模板(只有工具链和骨架,官网用)
 ```
 
 ## 用法
@@ -16,16 +17,19 @@ cli/
 ```bash
 npx github:zostcn/cli create my-app    # 从 GitHub 直接跑,不必先发 npm
 npx zost-cli create my-app             # 发布 npm 后
+npx github:zostcn/cli create my-site --bare   # 白板模板(无登录/接口层)
 ```
 
-脚手架做三件事:① 问答(只有项目名) → ② 拷贝 `template/` → ③ 变量替换。
+脚手架做三件事:① 问答(只有项目名) → ② 拷贝模板(`template/`,`--bare` 时
+`template-bare/`) → ③ 变量替换。
 替换的落点:`package.json`/`package-lock` 的 name、`index.html` 的 title、
 vite 的 `base`(生产挂 `/<项目名>/`,dev 留根)、两份 nginx conf 的 `<项目名>` 占位、
-部署 workflow 的 `PROJECT`、README 开头。
+部署 workflow 的 `PROJECT`、README 开头。两模板的占位标记逐字同构,规则只有一份,
+smoke 双跑校验。
 
 一个已知的坑:npm 包**无条件剔除** `.gitignore` / `.npmrc`(`files` 白名单也救不回)——
-所以脚手架内置了这两个文件的兜底内容,拷完缺失才写;内容与 `template/` 里逐字一致,
-`npm test` 断言相等防漂移。`.github/workflows/` 属同类风险(被剔了则生成的项目
+所以脚手架内置了这两个文件的兜底内容,拷完缺失才写;内容与**各自**模板目录里逐字一致,
+`npm test` 按变体断言相等防漂移。`.github/workflows/` 属同类风险(被剔了则生成的项目
 不带流水线),`npm test` 的 registry 路径断言它必须存在。
 
 **模板和脚手架必须同仓库**:变量替换是逐字标记匹配,改了模板没同步

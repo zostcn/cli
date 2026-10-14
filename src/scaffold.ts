@@ -2,8 +2,14 @@ import { cp, mkdir, readFile, rm, writeFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-/** 模板目录与 dist/ 同级(npm 包 files = ["dist", "template"])。 */
-const TEMPLATE_DIR = fileURLToPath(new URL("../template/", import.meta.url));
+/** 模板变体:full = 全量(登录/接口层齐),bare = 白板(工具链 + 骨架)。 */
+export type Variant = "full" | "bare";
+
+/** 模板目录与 dist/ 同级(npm 包 files = ["dist", "template", "template-bare"])。 */
+const TEMPLATE_DIRS: Record<Variant, string> = {
+  full: fileURLToPath(new URL("../template/", import.meta.url)),
+  bare: fileURLToPath(new URL("../template-bare/", import.meta.url)),
+};
 
 /** 拷贝时整目录跳过 —— node_modules / dist / .git 不是模板的一部分。 */
 const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
@@ -11,22 +17,52 @@ const SKIP_DIRS = new Set(["node_modules", "dist", ".git"]);
 /**
  * 模板 README 开头那段自我介绍(生成的项目里它不再成立)。
  * 逐字匹配;行尾按目标文件的实际 EOL 拼,免得换台机器 CRLF 检出就失配。
+ * 两模板占位标记逐字同构的姊妹段 —— 改一侧必须同步另一侧(与规则共用一套 smoke)。
  */
-const README_INTRO_LINES = [
-  "# zost 前端模板",
-  "",
-  "`zostcn/cli` 仓库的 `template/` —— **机制完整,不含任何「长什么样」的决定**。",
-  "起项目用脚手架:`npx github:zostcn/cli create <项目名>`(拷本目录手改 name / base / title 也行)。",
-];
+const README_INTROS: Record<Variant, string[]> = {
+  full: [
+    "# zost 前端模板",
+    "",
+    "`zostcn/cli` 仓库的 `template/` —— **机制完整,不含任何「长什么样」的决定**。",
+    "起项目用脚手架:`npx github:zostcn/cli create <项目名>`(拷本目录手改 name / base / title 也行)。",
+  ],
+  bare: [
+    "# zost 白板模板",
+    "",
+    "`zostcn/cli` 仓库的 `template-bare/` —— **空白页基线:只有工具链和骨架,没有登录/接口层**。",
+    "起项目用脚手架:`npx github:zostcn/cli create <项目名> --bare`(拷本目录手改 name / base / title 也行)。",
+  ],
+};
+
+/** README 替换后的生成说明(按变体,模板出处不同)。 */
+const README_GENERATED: Record<Variant, string[]> = {
+  full: [
+    "> 由 `zost-cli create` 生成(模板:`zostcn/cli` 仓库的 `template/`)。",
+    "> 下面的命令、规矩与已知的坑对本项目同样适用。",
+  ],
+  bare: [
+    "> 由 `zost-cli create --bare` 生成(模板:`zostcn/cli` 仓库的 `template-bare/`)。",
+    "> 下面的命令、规矩与已知的坑对本项目同样适用。",
+  ],
+};
+
+const NPMRC = `# npm 10.8.2 的 arborist 解析 vitest 5 的 peer 图时会崩
+# (\`TypeError: Cannot read properties of null (reading 'edgesOut')\`,#  @npmcli/arborist build-ideal-tree #loadPeerSet)。
+# legacy-peer-deps 绕开该路径;模板的依赖是精确版本,peer 宽松解析不引入漂移。
+legacy-peer-deps=true
+`;
 
 /**
  * npm 包**无条件剔除** `.gitignore` / `.npmrc`(npm-packing 规则,
  * `files` 白名单也救不回——npm 10.8.2 就是这样)。走 registry 的脚手架因此拷不到它们:
  * 生成的项目会缺 `.npmrc`(`npm install` 撞 arborist 崩溃)与 `.gitignore`(`.env` 可能被提交)。
- * 拷完若仍缺失就用这里兜底写;内容必须与 `template/` 里那两个文件逐字一致 —— smoke 断言相等防漂移。
+ * 拷完若仍缺失就用这里兜底写;内容必须与**各自**模板目录里那两个文件逐字一致
+ * —— smoke 按变体断言相等防漂移。`.gitignore` 两变体不同文(bare 无 orval 行),
+ * `.npmrc` 同文。
  */
-export const DOTFILE_FALLBACK: Record<string, string> = {
-  ".gitignore": `node_modules/
+export const DOTFILE_FALLBACK: Record<Variant, Record<string, string>> = {
+  full: {
+    ".gitignore": `node_modules/
 dist/
 .env
 .env.*
@@ -38,11 +74,18 @@ src/api/generated/
 # CI 拉的 spec 快照(zostcn/api docs/openapi.json) —— 取来的工件不入库
 /openapi.json
 `,
-  ".npmrc": `# npm 10.8.2 的 arborist 解析 vitest 5 的 peer 图时会崩
-# (\`TypeError: Cannot read properties of null (reading 'edgesOut')\`,#  @npmcli/arborist build-ideal-tree #loadPeerSet)。
-# legacy-peer-deps 绕开该路径;模板的依赖是精确版本,peer 宽松解析不引入漂移。
-legacy-peer-deps=true
+    ".npmrc": NPMRC,
+  },
+  bare: {
+    ".gitignore": `node_modules/
+dist/
+.env
+.env.*
+!.env.example
+*.local
 `,
+    ".npmrc": NPMRC,
+  },
 };
 
 interface Rule {
@@ -56,6 +99,7 @@ interface Rule {
   expected: number;
 }
 
+/** 两模板的占位标记逐字同构,规则**不分叉** —— smoke 双跑校验这个前提。 */
 function rulesFor(projectName: string): Rule[] {
   return [
     {
@@ -140,10 +184,15 @@ function count(haystack: string, needle: string): number {
 export async function scaffold(
   projectName: string,
   targetDir: string,
+  opts?: { variant?: Variant },
 ): Promise<void> {
-  const tpl = await stat(TEMPLATE_DIR).catch(() => null);
+  const variant: Variant = opts?.variant ?? "full";
+  const tplDir = TEMPLATE_DIRS[variant];
+  const tpl = await stat(tplDir).catch(() => null);
   if (!tpl?.isDirectory()) {
-    throw new Error(`找不到模板目录:${TEMPLATE_DIR}(npm 包的 files 里必须带 template/)`);
+    throw new Error(
+      `找不到模板目录:${tplDir}(npm 包的 files 里必须带 ${variant === "full" ? "template" : "template-bare"}/)`,
+    );
   }
   if (await stat(targetDir).catch(() => null)) {
     throw new Error(`目标目录已存在:${targetDir}\n换个项目名,或先移走它。`);
@@ -151,7 +200,7 @@ export async function scaffold(
 
   await mkdir(targetDir, { recursive: false });
   try {
-    await cp(TEMPLATE_DIR, targetDir, { recursive: true, filter: keep });
+    await cp(tplDir, targetDir, { recursive: true, filter: keep });
 
     for (const rule of rulesFor(projectName)) {
       const file = path.join(targetDir, rule.file);
@@ -164,10 +213,10 @@ export async function scaffold(
       await writeFile(file, content.split(rule.find).join(rule.to), "utf8");
     }
 
-    await replaceReadmeIntro(targetDir, projectName);
+    await replaceReadmeIntro(targetDir, projectName, variant);
 
     // registry 包里没有这两个文件(见 DOTFILE_FALLBACK 注释),缺失才写。
-    for (const [name, content] of Object.entries(DOTFILE_FALLBACK)) {
+    for (const [name, content] of Object.entries(DOTFILE_FALLBACK[variant])) {
       const file = path.join(targetDir, name);
       if (!(await stat(file).catch(() => null))) {
         await writeFile(file, content, "utf8");
@@ -183,20 +232,16 @@ export async function scaffold(
 async function replaceReadmeIntro(
   targetDir: string,
   projectName: string,
+  variant: Variant,
 ): Promise<void> {
   const file = path.join(targetDir, "README.md");
   const content = await readFile(file, "utf8");
   const eol = content.includes("\r\n") ? "\r\n" : "\n";
-  const find = README_INTRO_LINES.join(eol);
+  const find = README_INTROS[variant].join(eol);
   if (!content.includes(find)) {
     throw syncError({ file: "README.md", find, to: "", expected: 1 }, 0);
   }
-  const to = [
-    `# ${projectName}`,
-    "",
-    "> 由 `zost-cli create` 生成(模板:`zostcn/cli` 仓库的 `template/`)。",
-    "> 下面的命令、规矩与已知的坑对本项目同样适用。",
-  ].join(eol);
+  const to = [`# ${projectName}`, "", ...README_GENERATED[variant]].join(eol);
   await writeFile(file, content.replace(find, to), "utf8");
 }
 

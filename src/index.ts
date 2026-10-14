@@ -2,7 +2,7 @@
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
 import path from "node:path";
-import { scaffold } from "./scaffold.js";
+import { scaffold, type Variant } from "./scaffold.js";
 
 /** npm 包名 = 目录名 = 部署子路径,所以三者共用一套字符集(小写、URL 安全)。 */
 const NAME_RE = /^[a-z0-9][a-z0-9._-]*$/;
@@ -29,6 +29,7 @@ const USAGE = `用法:
   zost-cli create            不带名字则交互询问
 
 选项:
+  --bare         从 template-bare/ 生成白板项目(无登录/接口层,官网用)
   -h, --help     显示本帮助
   -v, --version  显示版本`;
 
@@ -63,12 +64,21 @@ async function main(): Promise<void> {
     throw new Error(`未知命令:${cmd}\n\n${USAGE}`);
   }
 
-  const name = rest[0] ? rest[0].trim() : await promptName();
+  // --bare 位置任意(create my-app --bare / create --bare my-app);
+  // 项目名不允许以 - 开头,首参带 - 的只可能是 flag。
+  const flags = rest.filter((a) => a.startsWith("-"));
+  const positional = rest.filter((a) => !a.startsWith("-"));
+  for (const f of flags) {
+    if (f !== "--bare") throw new Error(`未知选项:${f}\n\n${USAGE}`);
+  }
+  const variant: Variant = flags.includes("--bare") ? "bare" : "full";
+
+  const name = positional[0] ? positional[0].trim() : await promptName();
   const invalid = validateName(name);
   if (invalid) throw new Error(invalid);
 
   const target = path.resolve(process.cwd(), name);
-  await scaffold(name, target);
+  await scaffold(name, target, { variant });
 
   console.log(`已生成 ${target}
 下一步:

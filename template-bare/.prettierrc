@@ -1,0 +1,4 @@
+# 仓库格式的唯一真相。配置文件优先级**高于** VS Code 用户设置里的 prettier.* ——
+# 作者 IDE 里开了 vueIndentScriptAndStyle,写进来后插件保存与 `npm run format`
+# 输出完全一致,生成的项目也不依赖谁的 IDE 配置。
+vueIndentScriptAndStyle: true
