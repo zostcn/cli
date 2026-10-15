@@ -70,14 +70,13 @@ export async function register(
 }
 
 /**
- * 改密码(已登录会话内)。凭据**二选一**(与后端 ChangePasswordRequest 对应):
- * `oldPassword`(知道当前密码)或 `code`(新鲜短信验证码,给忘密码的用户)。
+ * 改密码(已登录会话内):新密码 + 新鲜短信验证码(与后端 ChangePasswordRequest
+ * 一一对应 —— 后端凭据只有短信码这一条)。
  * 成功后服务端作废该用户的**其他**会话、保留当前 —— 本端状态不变,不用清 store。
  */
 export async function changePassword(body: {
-  oldPassword?: string;
+  code: string;
   newPassword: string;
-  code?: string;
 }): Promise<void> {
   await postAuthPassword(body);
 }

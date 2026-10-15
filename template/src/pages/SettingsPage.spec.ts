@@ -7,8 +7,9 @@ import { createMemoryHistory, createRouter } from "vue-router";
 import SettingsPage from "./SettingsPage.vue";
 
 /**
- * SettingsPage 回归锁:凭据二选一(旧密 / 短信码)两条路各走各的 ——
+ * SettingsPage 回归锁:改密唯一凭据 = 新密码 + 短信码 ——
  * 码路径是「短信登录进来忘密码」的闭环,别退化回旧密码必填。
+ * 验证码栏必须排在确认新密码之后(表单动线)。
  */
 
 vi.mock("@/api/auth", async (importOriginal) => ({
@@ -34,7 +35,7 @@ async function mountSettings() {
   await router.isReady();
 
   wrapper = mount(SettingsPage, { global: { plugins: [pinia, router] } });
-  // /me 现在带回本人手机号 —— 码路径发码与掩码展示都靠它
+  // /me 带回本人手机号 —— 发码与掩码展示都靠它
   useSystemStore(pinia).user = {
     id: "1",
     nickname: "spike",
@@ -56,17 +57,27 @@ beforeEach(() => {
 });
 
 describe("SettingsPage 改密码", () => {
-  it("旧密码路径:两次输入不一致 → 本地拦下,不发请求", async () => {
+  it("验证码栏排在确认新密码之后", async () => {
     await mountSettings();
-    await wrapper
-      .find('input[placeholder="当前密码"]')
-      .setValue("old-pass-123");
+    const placeholders = wrapper.findAll("input").map((i) =>
+      i.attributes("placeholder"),
+    );
+    expect(placeholders).toEqual([
+      "新密码（至少 8 位）",
+      "确认新密码",
+      "验证码",
+    ]);
+  });
+
+  it("两次输入不一致 → 本地拦下,不发请求", async () => {
+    await mountSettings();
     await wrapper
       .find('input[placeholder="新密码（至少 8 位）"]')
       .setValue("new-pass-456");
     await wrapper
       .find('input[placeholder="确认新密码"]')
       .setValue("new-pass-999");
+    await wrapper.find('input[placeholder="验证码"]').setValue("112233");
     await wrapper.find("form").trigger("submit");
     await flushPromises();
 
@@ -74,36 +85,8 @@ describe("SettingsPage 改密码", () => {
     expect(changePassword).not.toHaveBeenCalled();
   });
 
-  it("旧密码路径:通过 → changePassword({oldPassword, newPassword}),成功后清表单", async () => {
+  it("发码给本人手机号(login purpose),掩码号可见", async () => {
     await mountSettings();
-    await wrapper
-      .find('input[placeholder="当前密码"]')
-      .setValue("old-pass-123");
-    await wrapper
-      .find('input[placeholder="新密码（至少 8 位）"]')
-      .setValue("new-pass-456");
-    await wrapper
-      .find('input[placeholder="确认新密码"]')
-      .setValue("new-pass-456");
-    await wrapper.find("form").trigger("submit");
-    await flushPromises();
-
-    expect(changePassword).toHaveBeenCalledWith({
-      oldPassword: "old-pass-123",
-      newPassword: "new-pass-456",
-    });
-    expect(wrapper.text()).toContain("其他设备上的登录已退出");
-    expect(
-      (
-        wrapper.find('input[placeholder="当前密码"]')
-          .element as HTMLInputElement
-      ).value,
-    ).toBe("");
-  });
-
-  it("短信码路径:发码给本人手机号(login purpose),掩码号可见", async () => {
-    await mountSettings();
-    await buttonByText("短信验证码").trigger("click");
 
     expect(wrapper.text()).toContain("138****0000");
     await buttonByText("发送验证码").trigger("click");
@@ -112,10 +95,8 @@ describe("SettingsPage 改密码", () => {
     expect(sendSmsCode).toHaveBeenCalledWith("13800000000", "login");
   });
 
-  it("短信码路径:填码提交 → changePassword({code, newPassword}),不带旧密码", async () => {
+  it("缺验证码 → 本地拦下,不发请求", async () => {
     await mountSettings();
-    await buttonByText("短信验证码").trigger("click");
-    await wrapper.find('input[placeholder="验证码"]').setValue("112233");
     await wrapper
       .find('input[placeholder="新密码（至少 8 位）"]')
       .setValue("new-pass-456");
@@ -125,22 +106,42 @@ describe("SettingsPage 改密码", () => {
     await wrapper.find("form").trigger("submit");
     await flushPromises();
 
+    expect(wrapper.text()).toContain("请输入验证码");
+    expect(changePassword).not.toHaveBeenCalled();
+  });
+
+  it("填码提交 → changePassword({code, newPassword}),成功后清表单", async () => {
+    await mountSettings();
+    await wrapper
+      .find('input[placeholder="新密码（至少 8 位）"]')
+      .setValue("new-pass-456");
+    await wrapper
+      .find('input[placeholder="确认新密码"]')
+      .setValue("new-pass-456");
+    await wrapper.find('input[placeholder="验证码"]').setValue("112233");
+    await wrapper.find("form").trigger("submit");
+    await flushPromises();
+
     expect(changePassword).toHaveBeenCalledWith({
       code: "112233",
       newPassword: "new-pass-456",
     });
     expect(wrapper.text()).toContain("其他设备上的登录已退出");
+    expect(
+      (
+        wrapper.find('input[placeholder="新密码（至少 8 位）"]')
+          .element as HTMLInputElement
+      ).value,
+    ).toBe("");
   });
 
   it("新密码 <8 位 → 本地拦下", async () => {
     await mountSettings();
     await wrapper
-      .find('input[placeholder="当前密码"]')
-      .setValue("old-pass-123");
-    await wrapper
       .find('input[placeholder="新密码（至少 8 位）"]')
       .setValue("short");
     await wrapper.find('input[placeholder="确认新密码"]').setValue("short");
+    await wrapper.find('input[placeholder="验证码"]').setValue("112233");
     await wrapper.find("form").trigger("submit");
     await flushPromises();
 

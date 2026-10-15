@@ -7,18 +7,15 @@
   /**
    * 账号安全页(机制层):改密码 + 信任设备入口。
    *
-   * 改密凭据**二选一**(与后端 `ChangePasswordRequest` 一一对应):
-   * 「知道当前密码」走旧密码;「不记得」走**新鲜短信验证码** ——
-   * 短信登录进来的用户没有旧密码可填,闭环靠这条。发码用缺省 `login` purpose
-   * (本人已注册,该 purpose 就是给已注册号码发的)。
+   * 改密凭据只有一条:**新密码 + 新鲜短信验证码**(与后端 `ChangePasswordRequest`
+   * 一一对应)—— 短信登录进来的用户没有旧密码可填,验证统一靠这条。
+   * 发码用缺省 `login` purpose(本人已注册,该 purpose 就是给已注册号码发的)。
    *
    * 成功后其他会话被服务端作废、当前保留 —— 所以本页成功后不清 store,
    * 只提示「其他设备已退出」。
    */
   const store = useSystemStore();
 
-  const mode = ref<"old" | "code">("old");
-  const oldPassword = ref("");
   const code = ref("");
   const newPassword = ref("");
   const confirmPassword = ref("");
@@ -35,12 +32,6 @@
       ? phone.slice(0, 3) + "****" + phone.slice(7)
       : phone;
   });
-
-  function switchMode(next: "old" | "code") {
-    mode.value = next;
-    error.value = "";
-    success.value = "";
-  }
 
   async function onSendCode() {
     error.value = "";
@@ -73,27 +64,18 @@
       error.value = "密码至少 8 位";
       return;
     }
-    if (mode.value === "old" && !oldPassword.value) {
-      error.value = "请输入当前密码";
-      return;
-    }
-    if (mode.value === "code" && !code.value) {
+    if (!code.value) {
       error.value = "请输入验证码";
       return;
     }
     try {
-      await changePassword(
-        mode.value === "old"
-          ? { oldPassword: oldPassword.value, newPassword: newPassword.value }
-          : { code: code.value, newPassword: newPassword.value },
-      );
+      await changePassword({ code: code.value, newPassword: newPassword.value });
       success.value = "密码已更新；其他设备上的登录已退出";
-      oldPassword.value = "";
       code.value = "";
       newPassword.value = "";
       confirmPassword.value = "";
     } catch (e) {
-      // 「旧密码错误」「验证码错误或已过期」都是后端 detail,原样透出
+      // 「验证码错误或已过期」是后端 detail,原样透出
       error.value = messageOf(e, "修改失败，请稍后再试");
     }
   }
@@ -106,57 +88,6 @@
     <h1 class="text-lg font-semibold">账号安全</h1>
 
     <form class="flex flex-col gap-3" @submit.prevent="onSubmit">
-      <div class="flex items-center gap-3 text-sm">
-        <span class="text-muted">验证方式</span>
-        <button
-          type="button"
-          :class="mode === 'old' ? 'text-primary font-medium' : 'text-muted'"
-          @click="switchMode('old')"
-        >
-          当前密码
-        </button>
-        <button
-          type="button"
-          :class="mode === 'code' ? 'text-primary font-medium' : 'text-muted'"
-          @click="switchMode('code')"
-        >
-          短信验证码
-        </button>
-      </div>
-
-      <!-- ── 知道当前密码 ─────────────────────── -->
-      <input
-        v-if="mode === 'old'"
-        v-model="oldPassword"
-        type="password"
-        class="border border-border rounded px-3 py-2 bg-bg text-fg"
-        placeholder="当前密码"
-        autocomplete="current-password"
-      />
-
-      <!-- ── 不记得,短信验证 ─────────────────── -->
-      <template v-else>
-        <p class="text-xs text-muted">
-          验证码将发送至账号绑定手机 {{ maskedPhone }}
-        </p>
-        <div class="flex gap-2">
-          <input
-            v-model="code"
-            class="border border-border rounded px-3 py-2 bg-bg text-fg flex-1"
-            placeholder="验证码"
-            autocomplete="one-time-code"
-          />
-          <button
-            type="button"
-            class="border border-border rounded px-3 py-2 text-sm disabled:opacity-50"
-            :disabled="cooldown > 0"
-            @click="onSendCode"
-          >
-            {{ cooldown > 0 ? `${cooldown}s 后重发` : "发送验证码" }}
-          </button>
-        </div>
-      </template>
-
       <input
         v-model="newPassword"
         type="password"
@@ -173,6 +104,28 @@
         autocomplete="new-password"
         required
       />
+
+      <!-- ── 短信验证码 ─────────────────────────── -->
+      <div class="flex gap-2">
+        <input
+          v-model="code"
+          class="border border-border rounded px-3 py-2 bg-bg text-fg flex-1"
+          placeholder="验证码"
+          autocomplete="one-time-code"
+        />
+        <button
+          type="button"
+          class="border border-border rounded px-3 py-2 text-sm disabled:opacity-50"
+          :disabled="cooldown > 0"
+          @click="onSendCode"
+        >
+          {{ cooldown > 0 ? `${cooldown}s 后重发` : "发送验证码" }}
+        </button>
+      </div>
+      <p class="text-xs text-muted">
+        验证码将发送至账号绑定手机 {{ maskedPhone }}
+      </p>
+
       <p class="text-xs text-muted">
         修改成功后，其他设备上的登录会立即退出，本设备保持登录
       </p>
