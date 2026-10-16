@@ -9,7 +9,7 @@
 npm install          # Node ≥22.12(volta 已钉 22.18);.npmrc 的 legacy-peer-deps 是必须的
 npm run gen          # 生成 src/api/generated/(不进仓库,首跑必做);需本地后端 8080,
                      # 或 OPENAPI_SPEC=<路径>/openapi.json npm run gen 吃 api 仓快照
-npm run dev          # http://localhost:5173,/api 代理到 127.0.0.1:8080
+npm run dev          # http://localhost:5173/<项目名>/,/api 代理到 127.0.0.1:8080
 ```
 
 前置:本地后端在跑(`api` 仓库 `./mvnw spring-boot:run`,dev profile)——只影响

@@ -84,7 +84,7 @@ async function main(): Promise<void> {
 下一步:
   cd ${name}
   npm install
-  npm run dev     # http://localhost:5173`);
+  npm run dev     # http://localhost:5173/${name}/`);
 }
 
 main().catch((e: unknown) => {

@@ -23,8 +23,8 @@ npx github:zostcn/cli create my-site --bare   # 白板模板(无登录/接口层
 脚手架做三件事:① 问答(只有项目名) → ② 拷贝模板(`template/`,`--bare` 时
 `template-bare/`) → ③ 变量替换。
 替换的落点:`package.json`/`package-lock` 的 name、`index.html` 的 title、
-vite 的 `base`(生产挂 `/<项目名>/`,dev 留根)、两份 nginx conf 的 `<项目名>` 占位、
-部署 workflow 的 `PROJECT`、README 开头。两模板的占位标记逐字同构,规则只有一份,
+vite 的 `base`(本地和生产都挂 `/<项目名>/`,不留根)、两份 nginx conf 的 `<项目名>` 占位、
+部署 workflow 的 `PROJECT`、README 开头与 dev 地址。两模板的占位标记逐字同构,规则只有一份,
 smoke 双跑校验。
 
 一个已知的坑:npm 包**无条件剔除** `.gitignore` / `.npmrc`(`files` 白名单也救不回)——

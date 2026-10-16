@@ -48,11 +48,12 @@ async function assertPlaceholders(dir, name) {
   assert.ok(!html.includes("<title>zost</title>"), "title 还是模板默认值");
 
   const vite = await read("vite.config.ts");
-  assert.ok(
-    vite.includes(`base: mode === "production" ? "/${name}/" : "/"`),
-    "vite base 没被参数化",
-  );
+  assert.ok(vite.includes(`base: "/${name}/"`), "vite base 没被参数化");
   assert.ok(!vite.includes(`base: "/",`), "vite base 还是模板默认值");
+  assert.ok(
+    !vite.includes(`mode === "production" ?`),
+    "vite base 不该有环境分叉 —— dev 与生产同前缀",
+  );
 
   const nginx = await read("deploy/nginx.conf.example");
   assert.ok(!nginx.includes("<项目名>"), "nginx.conf.example 残留占位");
@@ -76,6 +77,11 @@ async function assertPlaceholders(dir, name) {
     readme.includes("由 `zost-cli create"),
     "README 开头没换成生成说明",
   );
+  assert.ok(
+    readme.includes(`http://localhost:5173/${name}/`),
+    "README 的 dev 地址没参数化",
+  );
+  assert.ok(!readme.includes("5173/<项目名>"), "README 的 dev 地址残留占位");
 
   // 排除项:构建产物不进生成结果,环境样例要进
   assert.ok(!existsSync(path.join(dir, "node_modules")), "node_modules 被拷进来了");

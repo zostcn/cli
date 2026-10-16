@@ -7,7 +7,7 @@
 
 ```bash
 npm install          # Node ≥22.12(volta 已钉 22.18);.npmrc 的 legacy-peer-deps 是必须的
-npm run dev          # http://localhost:5173
+npm run dev          # http://localhost:5173/<项目名>/
 ```
 
 没有后端、没有接口层 —— 要调接口的项目参照全量模板(`zostcn/cli` 仓库 `template/`)自行补。

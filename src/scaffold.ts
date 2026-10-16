@@ -121,11 +121,12 @@ function rulesFor(projectName: string): Rule[] {
       expected: 1,
     },
     {
-      // 子路径部署:生产挂 /<项目名>/,dev 留根路径(README 的 5173 根地址照旧成立)。
-      // router 用 import.meta.env.BASE_URL,base 一改它自动跟着,不用第二处替换。
+      // 子路径部署:本地和生产都挂 /<项目名>/(不留根),dev 地址与生产构建同前缀,
+      // 环境之间无分叉 —— 本地验过的路由,上线不用再对一遍。
+      // router 用 import.meta.env.BASE_URL,base 一变它自动跟着,不用第二处替换。
       file: "vite.config.ts",
       find: `base: "/",`,
-      to: `base: mode === "production" ? "/${projectName}/" : "/", // 子路径部署(脚手架生成);dev 留根`,
+      to: `base: "/${projectName}/", // 子路径部署(脚手架生成),dev 与生产同前缀`,
       expected: 1,
     },
     {
@@ -148,6 +149,13 @@ function rulesFor(projectName: string): Rule[] {
       file: ".github/workflows/deploy.yml",
       find: `PROJECT: <项目名>`,
       to: `PROJECT: ${projectName}`,
+      expected: 1,
+    },
+    {
+      // README「跑起来」给的 dev 地址带真实前缀,与生成后的 base 逐字一致。
+      file: "README.md",
+      find: `http://localhost:5173/<项目名>/`,
+      to: `http://localhost:5173/${projectName}/`,
       expected: 1,
     },
   ];
