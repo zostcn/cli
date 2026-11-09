@@ -88,7 +88,7 @@ git init -b main && git add -A && git commit -m "init"
 git remote add origin git@github.com:zostcn/<仓库名>.git && git push -u origin main
 ```
 
-push `main` 即自动:测试 → 构建(必须显式给 `VITE_API_BASE_URL=服务器IP`,留空直接构建失败)
+push `main` 即自动:测试 → 构建(**不设** `VITE_API_BASE_URL`,设了直接构建失败)
 → 版本化上传 `releases/<时间戳-短sha>` → `nginx -t` 校验站点 conf 后热加载
 → 原子切 `current` → 保留 3 个可回滚。地址 = `http://<DEPLOY_HOST>/<项目名>/`,
 `/api/` 由共享 nginx 同域反代到 `api:8080`(与 dev 同构,cookie/CSRF 零改造)。
@@ -96,8 +96,7 @@ push `main` 即自动:测试 → 构建(必须显式给 `VITE_API_BASE_URL=服�
 换项目只改 workflow env 块的 `PROJECT`;换服务器改 `DEPLOY_HOST` + 两个 secrets。
 上主站 = 挂主域子路径 `zost.cn/<项目名>/`:CI 只交 location 片段(主块的人工
 include 收录),`deploy/nginx.conf` 换成 `.example` 的片段形态、conf 落点
-`conf/` → `loc/`、`VITE_API_BASE_URL` 换 `https://zost.cn` —— 三条逐条对照
-`deploy/nginx.conf.example` 头注释。
+`conf/` → `loc/` —— 两条逐条对照 `deploy/nginx.conf.example` 头注释。
 
 ## 已知的坑
 

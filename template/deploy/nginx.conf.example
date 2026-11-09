@@ -8,8 +8,7 @@
 # 与测试机形态(deploy/nginx.conf)的差异只有一条:测试机没有主块,CI 交完整
 # server 块;生产主块已就位,CI 交片段。片段自身(root + webroot 软链、SPA
 # 回退、资源缓存)两处逐字一致 —— 上主站就是把 deploy/nginx.conf 换成本文件、
-# workflow 的 conf 落点 conf/ 换成 loc/,构建的 VITE_API_BASE_URL 换成
-# https://zost.cn。
+# workflow 的 conf 落点 conf/ 换成 loc/。
 #
 # ⚠️ 不用 alias + try_files:try_files 的检查路径是 alias + **完整 $uri**(不剥
 #    location 前缀),检查永远落空、全部请求掉进回退。用 root + 布局对齐:

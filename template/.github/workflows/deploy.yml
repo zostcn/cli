@@ -2,11 +2,10 @@
 #
 #   ① 站点由**共享 nginx 容器**托管(全机唯一占 80 端口,edge 网络反代 api:8080)——
 #      本流水线连带部署站点 conf:先 `docker exec nginx nginx -t`,失败即还原,不动线上。
-#   ② 构建必须显式 VITE_API_BASE_URL(空值直接 throw)——
-#      测试机是同域反代 → 填服务器 IP(与页面同源,cookie/CSRF 走 /api/ 同 dev)。
-#   ③ 上主站时改三处:conf 落点 conf/ → loc/(生产主块的块内 include 收)、
-#      conf 内容换路径片段形态、VITE_API_BASE_URL 换 https://zost.cn ——
-#      逐条对照 deploy/nginx.conf.example。
+#   ② 构建禁止设 VITE_API_BASE_URL(设了直接 throw)——
+#      留空 = axios 走相对路径 /api,与页面同源,cookie/CSRF 同 dev。
+#   ③ 上主站时改两处:conf 落点 conf/ → loc/(生产主块的块内 include 收)、
+#      conf 内容换路径片段形态 —— 逐条对照 deploy/nginx.conf.example。
 #
 # 需要的 GitHub secrets(**全生态同值,一个仓库配一次即可**):
 #   SSH_PRIVATE_KEY(部署专用私钥)/ SSH_KNOWN_HOSTS(ssh-keyscan 的服务器公钥)
@@ -79,10 +78,9 @@ jobs:
 
       # vue-tsc 类型检查在 build 里(build = typecheck + vite build)
       - name: Build
+        # 不给 VITE_API_BASE_URL:留空 = 相对路径 /api,与页面同源,
+        # apex 与 www 两个入口共用一份产物(设了会被 vite.config 的 B12 拦下)
         run: npm run build
-        env:
-          # 同域反代:与页面同源,axios 直接打 /api/(生产必须显式给值,留空构建失败)
-          VITE_API_BASE_URL: http://${{ env.DEPLOY_HOST }}
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0

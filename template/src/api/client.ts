@@ -7,7 +7,9 @@ import { ApiError, type ProblemDetailLike } from "./types";
  * 全部只写在这里 —— orval 生成物因此可以一行手写逻辑都没有。
  */
 export const http = axios.create({
-  // 空 = dev 走 vite 代理(/api → 127.0.0.1:8080);生产 = VITE_API_BASE_URL
+  // 恒留空 → 相对路径 /api,与页面同源:dev 走 vite 代理(→ 127.0.0.1:8080),
+  // 生产走所在主机的 nginx 反代。给了绝对地址,页面开在 www 时就跨源到 apex,
+  // 被 CSP `connect-src 'self'` 拦掉(后端无 CORS 兜底)。
   baseURL: import.meta.env.VITE_API_BASE_URL || "",
   timeout: 15_000,
   withCredentials: true,
